@@ -112,7 +112,15 @@ void rkqc(
           if (*hnext > HMAX) *hnext = HMAX;
           break;
       }
-      h=SAFETY*h*exp(PSHRNK*log(errmax));
+      if (errmax > 10000 || y[1] > 1000 || isnormal(y[1]) == 0)
+      	{
+      	printf("NAN, and h = %f \n", h);
+      	h = h/2;
+      	}
+
+      else 
+      	h=SAFETY*h*exp(PSHRNK*log(errmax));
+      
   }
   for (i=0;i<n;i++) y[i] += ytemp[i]*FCOR;
 
