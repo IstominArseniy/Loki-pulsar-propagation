@@ -82,6 +82,7 @@ vector <double> vB (double R) {
     return SUM(vBsplit(R), vBdipole(R));
   }
 }
+
 vector <double> vb (double R) {
   return NORMALIZE(vB(R));
 }
@@ -143,23 +144,46 @@ double BetaB (double R) {
   return atan(by / bx);
 }
 
-double gFunc (double R) {
-  double f = pow(sin(psi_m(R)), 2) * Globals::RLC / NORM(vR(R));
-	double theta = ANGLE(vR(R), Globals::vOmega);
-	double dtheta = 5.0 * constants::PI / 180.0;
-	double gap = 1.0;
-	if (Globals::alpha_deg > 80)
-    gap = (1. - exp(-pow(constants::PI * 0.5 - theta, 2) / (2.0 * dtheta * dtheta)));
-	return (pow(f, 2.5) * exp(-f * f) / (pow(f, 2.5) + pow(Globals::f0, 2.5))) * gap;
+double r_perp(double R){
+  return pow(sin(psi_m(R)), 2) * Globals::RLC / NORM(vR(R));
 }
+
+double phi_pc(double R){
+  vector<double> m_perp(3);
+  m_perp[2] = sqrt(pow(vMoment(R)[0], 2) + pow(vMoment(R)[1], 2));
+  m_perp[0] = -vMoment(R)[2] *  vMoment(R)[0] / sqrt(pow(vMoment(R)[0], 2) + pow(vMoment(R)[1], 2));
+  m_perp[1] = -vMoment(R)[2] *  vMoment(R)[1] / sqrt(pow(vMoment(R)[0], 2) + pow(vMoment(R)[1], 2));
+  // cout << ANGLE(m_perp, vMoment(R)) << endl;
+  vector<double> v_perp;
+  v_perp = SUM(vR(R), TIMES(-SCALAR(vR(R),  vMoment(R)), vMoment(R)));
+  return ANGLE(v_perp, m_perp); //REDO ANGLE
+}
+
+double gFunc (double R) {
+
+  //SUM(vR(R), -SCALAR(vR(R), m_perp));
+	// double theta = ANGLE(vR(R), Globals::vOmega);
+	// double dtheta = 5.0 * constants::PI / 180.0;
+	// double gap = 1.0;
+	// if (Globals::alpha_deg > 80)
+  //   gap = (1. - exp(-pow(constants::PI * 0.5 - theta, 2) / (2.0 * dtheta * dtheta)));
+	// return (pow(f, 2.5) * exp(-f * f) / (pow(f, 2.5) + pow(Globals::f0, 2.5))) * gap;
+  return Globals::dencity_interpolation.get_f(r_perp(R), phi_pc(R));
+}
+
 double Ne (double R) {
   double nGJ = SCALAR(Globals::vOmega, vB(R)) * (Globals::B0 / pow(NORM(vR(R)), 3)) / (2 * constants::PI * constants::c * constants::e);
   return Globals::lambda * gFunc (R) * nGJ;
 }
 
+double RM_dencity(double R){
+    return 2.62e-17 * Ne(R) / Globals::lambda * (Globals::B0 / pow(NORM(vR(R)), 3)) * cos(theta_kb(R));
+}
+
 double omegaB (double R) {
   return -constants::e * NORM(vB(R)) * (Globals::B0 / pow(NORM(vR(R)), 3)) / (constants::me * constants::c);
 }
+
 double omegaW (double R) {
   double vx = vUdr(R) [0];
   double vz = vUdr(R) [2];
@@ -214,4 +238,28 @@ double Lambda (double R) {
 
 double dtau (double R) {
   return pow(omegaP(R), 2) * fDist (fabs(omegaB(R)) / (omegaW(R) * gammaU(R)));
+}
+
+double find_initial_point() {
+/*
+This function find a distance from emission point where oscillations fade out but p.a. is still strictly
+following beta + delta. This point is determined from the condition Lambda * omega / 2 / c ~ 1.
+Binary serach is used here.
+*/
+  double freq0 = 1;
+  if(fabs(constants::R_star * Lambda(0) * Globals::omega / constants::c / 2) < freq0)
+    return 0;
+  double R_left = 0.0, R_right = Globals::RLC, R_cur; 
+  R_cur = (R_left + R_right) / 2;
+  while(fabs(fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2)  - freq0) > 0.1){
+    R_cur = (R_left + R_right) / 2;
+    if(fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2) < freq0){
+      R_right = R_cur;
+    }
+    else{
+      R_left = R_cur; 
+    }
+    //cout << R_left << " " << R_cur << " " << R_right << " " << fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2) << endl;
+  }
+  return R_cur;
 }

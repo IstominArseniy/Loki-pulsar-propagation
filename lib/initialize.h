@@ -1,3 +1,5 @@
+#include "interpolator.h"
+
 #pragma INITIALIZE
 
 namespace Globals {
@@ -11,7 +13,8 @@ namespace Globals {
         PHI0,
         R_em, RLC, RESCAPE, ROMODE;
   extern vector <double> vOmega;
-  extern string RUN_ID, input_name, out_path;
+  extern string RUN_ID, input_name, out_path, dencity_filename;
+  extern interpolator2D dencity_interpolation;
 }
 
 void findInitPoints (double PHI0);

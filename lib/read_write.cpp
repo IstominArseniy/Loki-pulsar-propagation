@@ -4,7 +4,7 @@
 #include <string>
 #include <stdlib.h>
 #include <vector>
-
+#include <cstring>
 #include <sstream>
 #include <algorithm>
 #include <iterator>

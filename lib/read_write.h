@@ -1,5 +1,7 @@
 #pragma READ_WRITE
 using namespace std;
+#include <string>
+
 
 void throw_error(const string msg);
 double read_from_file (string input_name, const string param);

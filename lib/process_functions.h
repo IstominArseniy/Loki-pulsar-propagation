@@ -12,8 +12,13 @@ double Lambda (double R);
 double dtau (double R);
 double psi_m (double R);
 vector <double> vR (double R);
+double r_perp(double R);
+double phi_pc(double R);
 double gFunc (double R);
 
 vector <double> vMoment (double R);
 vector <double> vUdr (double R);
 double theta_kb (double R);
+double find_initial_point();
+
+double RM_dencity(double R);

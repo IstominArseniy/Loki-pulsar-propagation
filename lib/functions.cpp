@@ -36,6 +36,7 @@ vector <double> NORMALIZE (vector <double> vec) {
 } // Unitize given vector
 
 double ANGLE (vector <double> vec1, vector <double> vec2) {
+  // REDO with atan2 (?)
   return acos(SCALAR(NORMALIZE(vec1), NORMALIZE(vec2)));
 } // Angle
 double Arcsinh(double x) {

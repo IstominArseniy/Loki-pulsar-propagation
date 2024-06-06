@@ -1,0 +1,21 @@
+B12              2.0        # Surface B-field in 10^12 Gs
+Period           0.288          # Rotation period in sec
+freqGHz          0.6         # Radiation frequency in GHz
+
+lambda           300.0      # Plasma multiplicity # normally 10000
+gamma0           50.0       # Plasma mean gamma factor # normally 50
+f0               0.5         # Polar Cap gap width # normally 0.5
+R_em             15.0        # Emission radius in star radii
+
+mode             0           # 1 = O-mode & 0 = X-mode
+fr               1.0         # Split-monopole parameter
+fphi             1.0         # Split-monopole parameter
+
+alpha_deg        92.7
+beta_deg         -3.2
+
+phi_start        -5.0       # Start from phase
+phi_end          5.0        # End with phase
+phi_step         1.0         # Step phase
+
+dencity_filename n_2D_J1549−4848.txt      # 2D dencity grid file

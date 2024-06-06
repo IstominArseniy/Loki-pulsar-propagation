@@ -75,6 +75,7 @@ void findInitPoints (double PHI0) {
   }
   Globals::theta_em = X;
   Globals::phi_em = Y;
+  
 }
 
 // initialize Globals >
@@ -88,7 +89,9 @@ double Globals::theta_em, Globals::phi_em,
       Globals::PHI0,
       Globals::R_em, Globals::RLC, Globals::RESCAPE, Globals::ROMODE;
 vector <double> Globals::vOmega;
-string Globals::RUN_ID, Globals::input_name, Globals::out_path;
+interpolator2D Globals::dencity_interpolation;
+
+string Globals::RUN_ID, Globals::input_name, Globals::out_path, Globals::dencity_filename;
 // < initialize Globals
 
 void define_Globals() {
@@ -107,7 +110,8 @@ void define_Globals() {
 
   Globals::alpha_deg = read_from_file(Globals::input_name, "alpha_deg");
   Globals::beta_deg = read_from_file(Globals::input_name, "beta_deg");
-
+  Globals::dencity_filename = read_from_file_str(Globals::input_name, "dencity_filename", "2D_dencity");
+  Globals::dencity_interpolation.init(Globals::dencity_filename);
   Globals::alpha = Globals::alpha_deg * constants::PI / 180.0; // Inclination angle in radians
   Globals::beta = Globals::beta_deg * constants::PI / 180.0; // Line of sight angle in radians;
   Globals::dzeta = Globals::alpha - Globals::beta; // Minimum angle between the rotation axis and the line of sight
