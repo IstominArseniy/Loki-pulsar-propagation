@@ -37,7 +37,8 @@ vector <double> NORMALIZE (vector <double> vec) {
 
 double ANGLE (vector <double> vec1, vector <double> vec2) {
   // REDO with atan2 (?)
-  return acos(SCALAR(NORMALIZE(vec1), NORMALIZE(vec2)));
+  return 2 * atan2(NORM(SUM(TIMES(-1, NORMALIZE(vec1)), NORMALIZE(vec2))), NORM(SUM(NORMALIZE(vec1), NORMALIZE(vec2))));
+  // return acos(SCALAR(NORMALIZE(vec1), NORMALIZE(vec2)));
 } // Angle
 double Arcsinh(double x) {
   return log(x + sqrt(pow(x, 2.0) + 1.0));

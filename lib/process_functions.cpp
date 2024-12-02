@@ -156,22 +156,24 @@ double phi_pc(double R){
   // cout << ANGLE(m_perp, vMoment(R)) << endl;
   vector<double> v_perp;
   v_perp = SUM(vR(R), TIMES(-SCALAR(vR(R),  vMoment(R)), vMoment(R)));
-  return ANGLE(v_perp, m_perp); //REDO ANGLE
+  if(NORM(CROSS(m_perp, v_perp)) >= 0)
+    return constants::PI / 2 + ANGLE(v_perp, m_perp); //REDO ANGLE
+  else
+    return constants::PI / 2 - ANGLE(v_perp, m_perp);
 }
 
 double gFunc (double R) {
-
-  //SUM(vR(R), -SCALAR(vR(R), m_perp));
-	// double theta = ANGLE(vR(R), Globals::vOmega);
-	// double dtheta = 5.0 * constants::PI / 180.0;
-	// double gap = 1.0;
-	// if (Globals::alpha_deg > 80)
-  //   gap = (1. - exp(-pow(constants::PI * 0.5 - theta, 2) / (2.0 * dtheta * dtheta)));
-	// return (pow(f, 2.5) * exp(-f * f) / (pow(f, 2.5) + pow(Globals::f0, 2.5))) * gap;
-  return Globals::dencity_interpolation.get_f(r_perp(R), phi_pc(R));
+  double f = pow(sin(psi_m(R)), 2) * Globals::RLC / NORM(vR(R));
+	double theta = ANGLE(vR(R), Globals::vOmega);
+	double dtheta = 5.0 * constants::PI / 180.0;
+	double gap = 1.0;
+	if (Globals::alpha_deg > 80)
+    gap = (1. - exp(-pow(constants::PI * 0.5 - theta, 2) / (2.0 * dtheta * dtheta)));
+	return (pow(f, 2.5) * exp(-f * f) / (pow(f, 2.5) + pow(Globals::f0, 2.5))) * gap;
+  // return Globals::dencity_interpolation.get_f(r_perp(R), phi_pc(R));
 }
 
-double Ne (double R) {
+double Ne(double R) {
   double nGJ = SCALAR(Globals::vOmega, vB(R)) * (Globals::B0 / pow(NORM(vR(R)), 3)) / (2 * constants::PI * constants::c * constants::e);
   return Globals::lambda * gFunc (R) * nGJ;
 }
