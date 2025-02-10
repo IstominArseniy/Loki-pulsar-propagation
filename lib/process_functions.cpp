@@ -229,6 +229,7 @@ double INTEGRAL (double gamma, double R) {
           (log(2*pow(gamma,6) + pow(Globals::gamma0,6)) - 3*log(fabs((1 - gamma*sqrt(cA))*(1 + gamma*sqrt(cA))))))/
           (2.*pow(2, 1.0 / 6.0)*constants::PI*pow(Globals::gamma0,3)*(2 + pow(Globals::gamma0,6)*pow(cA,3)));
 }
+
 double Lambda (double R) {
   double vx = vUdr(R) [0];
   double vy = vUdr(R) [1];
@@ -238,6 +239,11 @@ double Lambda (double R) {
   return (-1.0 / 2.0) * pow(omegaP(R) * gammaU(R) / omegaW(R), 2) * avrg * (pow(sinth - vx, 2) + pow(vy * costh, 2));
 }
 
+double dLambda_dl(double R){
+    double dl = 1;
+    return (Lambda(R + dl) - Lambda(R))/dl / constants::R_star;
+}
+
 double dtau (double R) {
   return pow(omegaP(R), 2) * fDist (fabs(omegaB(R)) / (omegaW(R) * gammaU(R)));
 }
@@ -245,17 +251,39 @@ double dtau (double R) {
 double find_initial_point() {
 /*
 This function find a distance from emission point where oscillations fade out but p.a. is still strictly
-following beta + delta. This point is determined from the condition Lambda * omega / 2 / c ~ 1.
-Binary serach is used here.
+following beta + delta. 
+
+INCORRECT!!! (This point is determined from the condition Lambda * omega / 2 / c ~ 1.
+Binary serach is used here.)
+
+This point is determined from the condition |dLambda_dl / Lambda^2 * 2 * c / omega| ~ 1
 */
+  // double freq0 = 1;
+  // if(fabs(constants::R_star * Lambda(0) * Globals::omega / constants::c / 2) < freq0)
+  //   return 0;
+  // double R_left = 0.0, R_right = Globals::RLC, R_cur; 
+  // R_cur = (R_left + R_right) / 2;
+  // while(fabs(fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2)  - freq0) > 0.1){
+  //   R_cur = (R_left + R_right) / 2;
+  //   if(fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2) < freq0){
+  //     R_right = R_cur;
+  //   }
+  //   else{
+  //     R_left = R_cur; 
+  //   }
+  //   //cout << R_left << " " << R_cur << " " << R_right << " " << fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2) << endl;
+  // }
+  // return R_cur;
   double freq0 = 1;
-  if(fabs(constants::R_star * Lambda(0) * Globals::omega / constants::c / 2) < freq0)
+  // cout << fabs(dLambda_dl(0) / pow(Lambda(0), 2) * 2 * constants::c / Globals::omega) << endl;
+  if(fabs(dLambda_dl(0) / pow(Lambda(0), 2) * 2 * constants::c / Globals::omega) > freq0)
     return 0;
   double R_left = 0.0, R_right = Globals::RLC, R_cur; 
   R_cur = (R_left + R_right) / 2;
-  while(fabs(fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2)  - freq0) > 0.1){
+  while(fabs(fabs(dLambda_dl(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / Globals::omega)  - freq0) > 0.1){
     R_cur = (R_left + R_right) / 2;
-    if(fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2) < freq0){
+    // cout << fabs(dLambda_dl(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / Globals::omega) << endl;
+    if(fabs(dLambda_dl(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / Globals::omega) > freq0){
       R_right = R_cur;
     }
     else{

@@ -39,6 +39,9 @@ int main(int argc, char* argv[]) {
   ofstream output1(Globals::out_path + "/" + Globals::RUN_ID + "_1.dat");
   ofstream output2(Globals::out_path + "/" + Globals::RUN_ID + "_log.dat");
   ofstream output3(Globals::out_path + "/" + Globals::RUN_ID + "_RMs.dat");
+  ofstream output4(Globals::out_path + "/" + Globals::RUN_ID + "PAs.dat");
+
+
 
   // SIMULATION STARTS HERE />
 
@@ -49,11 +52,12 @@ int main(int argc, char* argv[]) {
     cout << "PHI: " << phi_t << endl;
     Globals::PHI0 = phi_t * constants::PI / 180.0;
     findInitPoints (Globals::PHI0);
-    cout << r_perp(0) << " " << phi_pc(0) << endl;
+    // cout << r_perp(0) << " " << phi_pc(0) << endl;
     double x1, x2, dep_vars[2];
     // attempt to avoid initial osc. region
-    x1 = find_initial_point();
-    //cout << x1 << endl;
+    //x1 = find_initial_point() / 2;
+    x1 = 0;
+    cout << x1 << endl;
     x2 = 1.5 * Globals::RESCAPE;
 
     // Initial values />
@@ -95,7 +99,8 @@ int main(int argc, char* argv[]) {
     // cout << "\tI: " << II << "\n\tV: " << VV << "\n\tPA: " << -PA << endl << endl;
     output1 << phi_t << " " << II << " " << VV << " " << PA << endl ;
     output3 << (dep_vars[0] - PA0_rad) / std::pow((constants::c / Globals::freqGHz / 1e9), 2) << " ";
-    std::cout << (dep_vars[0] - PA0_rad) << " " << dep_vars[0] * 180 / constants::PI << " " <<  PA0_rad * 180 / constants::PI << std::endl;
+    output4 << dep_vars[0] << " ";
+    //std::cout << (dep_vars[0] - PA0_rad) << " " << dep_vars[0] * 180 / constants::PI << " " <<  PA0_rad * 180 / constants::PI << std::endl;
   }
   output0.close();
   output1.close();

@@ -20,5 +20,5 @@ vector <double> vMoment (double R);
 vector <double> vUdr (double R);
 double theta_kb (double R);
 double find_initial_point();
-
+double dLambda_dl(double R);
 double RM_dencity(double R);
