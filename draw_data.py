@@ -15,7 +15,6 @@ def shift_angle(angle):
     else:
         return angle_vals
 
-
 print("print 0 to see initial values and 1 to see calculated values")
 request = int(input())
 if request == 0:
@@ -36,17 +35,29 @@ with open(file_name) as f:
             Vs.append(float(tmp[2]))
             PAs.append(shift_angle(float(tmp[3]) * np.pi / 180) * 180 / np.pi)
             phases.append(float(tmp[0]))
-f1 = plt.figure()
-f2 = plt.figure()
-ax1 = f1.add_subplot(111)
-ax2 = f2.add_subplot(111)
-ax1.plot(phases, Is, label='I')
-ax1.plot(phases, Vs, label='V')
-ax1.legend()
-f1.savefig('I_V_output.png')
-ax2.scatter(phases, PAs, label='PA')
-ax2.legend()
-f2.savefig('PA_output.png')
+
+fig, axs = plt.subplots(2, height_ratios=[1, 4])
+Is = np.array(Is)
+Vs = np.array(Vs)
+Ls = np.sqrt(Is**2 - Vs**2)
+axs[0].scatter(phases, PAs, c='black', s=3)
+axs[1].plot(phases, Is, c='black', label='I')
+axs[1].plot(phases, Vs, c='blue', label='V')
+axs[1].plot(phases, Ls, c='red', label='L')
+fig.legend()
+fig.show()
+fig.savefig('IVLPA_output.png', dpi=400, bbox_inches='tight')
+# f1 = plt.figure()
+# f2 = plt.figure()
+# ax1 = f1.add_subplot(111)
+# ax2 = f2.add_subplot(111)
+# ax1.plot(phases, Is, label='I')
+# ax1.plot(phases, Vs, label='V')
+# ax1.legend()
+# f1.savefig('I_V_output.png')
+# ax2.scatter(phases, PAs, label='PA')
+# ax2.legend()
+# f2.savefig('PA_output.png')
 
 
 
