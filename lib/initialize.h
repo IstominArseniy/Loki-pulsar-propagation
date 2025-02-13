@@ -11,7 +11,7 @@ namespace Globals {
         mode, fr, fphi,
         alpha_deg, beta_deg, alpha, beta, dzeta,
         PHI0,
-        R_em, RLC, RESCAPE, ROMODE;
+        R_em, RLC, RESCAPE, ROMODE, L_SHIFT;
   extern vector <double> vOmega;
   extern string RUN_ID, input_name, out_path, dencity_filename;
   extern interpolator2D dencity_interpolation;

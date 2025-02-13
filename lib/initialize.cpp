@@ -26,7 +26,17 @@ vector <double> b0 (double th, double ph, double PHI0) {
   m[1] = sin(Globals::alpha) * sin(Globals::PHI0);
   m[2] = cos(Globals::alpha);
 
-  return NORMALIZE(SUM(TIMES(3.0 * SCALAR(m, n0), n0), TIMES(-1.0, m)));
+  //wind component
+  vector <double> bw(3);
+  bw[0] = Globals::R_em/Globals::RLC * Globals::fr * n0[0] - std::pow(Globals::R_em/Globals::RLC, 2)* 
+  Globals::fphi * Globals::fr * sin(th) * (-sin(ph));
+  bw[1] = Globals::R_em/Globals::RLC * Globals::fr * n0[1] - std::pow(Globals::R_em/Globals::RLC, 2)* 
+  Globals::fphi * Globals::fr * sin(th) * cos(ph);
+  bw[2] = Globals::R_em/Globals::RLC * Globals::fr * n0[2];
+  //--------------
+  return NORMALIZE(SUM(SUM(TIMES(3.0 * SCALAR(m, n0), n0), TIMES(-1.0, m)), bw));
+  // return NORMALIZE(SUM(TIMES(3.0 * SCALAR(m, n0), n0), TIMES(-1.0, m)));
+
 }
 double func1 (double x, double y, double PHI0) {
   vector <double> o(3);
@@ -61,7 +71,7 @@ double DY (double (*func)(double, double, double), double x, double y, double PH
 
 void findInitPoints (double PHI0) {
   double X = Globals::alpha, Y = Globals::PHI0;
-  for(int i = 0; i < 100; i ++) {
+  for(int i = 0; i < 50; i ++) {
       double f1x = DX(func1, X, Y, Globals::PHI0);
       double f2x = DX(func2, X, Y, Globals::PHI0);
       double f1y = DY(func1, X, Y, Globals::PHI0);
@@ -87,7 +97,7 @@ double Globals::theta_em, Globals::phi_em,
       Globals::mode, Globals::fr, Globals::fphi,
       Globals::alpha_deg, Globals::beta_deg, Globals::alpha, Globals::beta, Globals::dzeta,
       Globals::PHI0,
-      Globals::R_em, Globals::RLC, Globals::RESCAPE, Globals::ROMODE;
+      Globals::R_em, Globals::RLC, Globals::RESCAPE, Globals::ROMODE, Globals::L_SHIFT;
 vector <double> Globals::vOmega;
 interpolator2D Globals::dencity_interpolation;
 
@@ -119,6 +129,7 @@ void define_Globals() {
   Globals::B0 = Globals::B12 * 1.0e12; // Surface magnetic field in Gs
   Globals::Omega = 2.0 * constants::PI / Globals::Period; // Rotation frequency
   Globals::omega = 2.0 * constants::PI * Globals::freqGHz * 1.0e9; // Radiation circular frequency
+  Globals::L_SHIFT = 1.0; // Shift to avoid zero k_B angle
 
   Globals::vOmega.push_back(0.);
   Globals::vOmega.push_back(0.);

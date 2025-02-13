@@ -8,6 +8,7 @@
 #include "functions.h"
 #include "process_functions.h"
 #include "initialize.h"
+#include "integrator.h" 
 using namespace std;
 
 // most of functions should be local
@@ -58,9 +59,9 @@ vector <double> vBsplit (double R) {
   double sinth = sqrt(1 - costh * costh);
   double cosphi = vR(R)[0] / Rxy;
   double sinphi = vR(R)[1] / Rxy;
-  double phi = acos (cosphi);
+  // double phi = acos (cosphi);
 
-  double psi1 = costh * cos(Globals::alpha) + sinth * sin(Globals::alpha) * cos(phi - Globals::PHI0 + Rr / Globals::RLC);
+  // double psi1 = costh * cos(Globals::alpha) + sinth * sin(Globals::alpha) * cos(phi - Globals::PHI0 + Rr / Globals::RLC);
 
   double Br = (Globals::fr / (Rr * Rr * Globals::RLC)); // * tanh(psi1 / 0.1);
   double Bphi = -(Globals::fphi * Globals::fr * sinth / (Rr * Globals::RLC * Globals::RLC)); // * tanh(psi1 / 0.1);
@@ -144,6 +145,15 @@ double BetaB (double R) {
   return atan(by / bx);
 }
 
+double delta_derivative(double R){
+  double dl = 1;
+  return (delta(R + dl) - delta(R))/dl;
+}
+
+double BetaB_derivative(double R){
+  double dl = 1;
+  return (BetaB(R + dl) - BetaB(R))/dl;
+}
 double r_perp(double R){
   return pow(sin(psi_m(R)), 2) * Globals::RLC / NORM(vR(R));
 }
@@ -239,9 +249,9 @@ double Lambda (double R) {
   return (-1.0 / 2.0) * pow(omegaP(R) * gammaU(R) / omegaW(R), 2) * avrg * (pow(sinth - vx, 2) + pow(vy * costh, 2));
 }
 
-double dLambda_dl(double R){
+double Lambda_derivative(double R){
     double dl = 1;
-    return (Lambda(R + dl) - Lambda(R))/dl / constants::R_star;
+    return (Lambda(R + dl) - Lambda(R))/dl;
 }
 
 double dtau (double R) {
@@ -252,38 +262,20 @@ double find_initial_point() {
 /*
 This function find a distance from emission point where oscillations fade out but p.a. is still strictly
 following beta + delta. 
-
-INCORRECT!!! (This point is determined from the condition Lambda * omega / 2 / c ~ 1.
-Binary serach is used here.)
-
-This point is determined from the condition |dLambda_dl / Lambda^2 * 2 * c / omega| ~ 1
+This point is determined from the condition |Lambda_derivative / Lambda^2 * 2 * c / omega| ~ 1 using binary search
 */
-  // double freq0 = 1;
-  // if(fabs(constants::R_star * Lambda(0) * Globals::omega / constants::c / 2) < freq0)
-  //   return 0;
-  // double R_left = 0.0, R_right = Globals::RLC, R_cur; 
-  // R_cur = (R_left + R_right) / 2;
-  // while(fabs(fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2)  - freq0) > 0.1){
-  //   R_cur = (R_left + R_right) / 2;
-  //   if(fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2) < freq0){
-  //     R_right = R_cur;
-  //   }
-  //   else{
-  //     R_left = R_cur; 
-  //   }
-  //   //cout << R_left << " " << R_cur << " " << R_right << " " << fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2) << endl;
-  // }
-  // return R_cur;
-  double freq0 = 1;
-  // cout << fabs(dLambda_dl(0) / pow(Lambda(0), 2) * 2 * constants::c / Globals::omega) << endl;
-  if(fabs(dLambda_dl(0) / pow(Lambda(0), 2) * 2 * constants::c / Globals::omega) > freq0)
-    return 0;
-  double R_left = 0.0, R_right = Globals::RLC, R_cur; 
+  double freq0 = 0.1;
+  double n_iter=0;
+  // cout << fabs(Lambda_derivative(0) / pow(Lambda(0), 2) * 2 * constants::c / Globals::omega) << endl;
+  if(fabs(Lambda_derivative(0) / pow(Lambda(0), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0)
+    return Globals::L_SHIFT; //shift to avoid zero kB angle
+  double R_left = Globals::L_SHIFT, R_right = Globals::RLC / 10, R_cur; 
   R_cur = (R_left + R_right) / 2;
-  while(fabs(fabs(dLambda_dl(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / Globals::omega)  - freq0) > 0.1){
+  while(fabs(fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c  / constants::R_star/ Globals::omega)  - freq0) > 0.01 && n_iter < 30){
     R_cur = (R_left + R_right) / 2;
-    // cout << fabs(dLambda_dl(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / Globals::omega) << endl;
-    if(fabs(dLambda_dl(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / Globals::omega) > freq0){
+    n_iter++;
+    // cout << fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / Globals::omega) << endl;
+    if(fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0){
       R_right = R_cur;
     }
     else{
@@ -292,4 +284,24 @@ This point is determined from the condition |dLambda_dl / Lambda^2 * 2 * c / ome
     //cout << R_left << " " << R_cur << " " << R_right << " " << fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2) << endl;
   }
   return R_cur;
+}
+
+double approximate_solution_theta0(double R, int mode){
+  double integral;
+  integral = integrate(Lambda, 0, R);
+  if (mode == 1)
+    return BetaB(R) + delta(R) - constants::c / constants::R_star / Globals::omega / Lambda(Globals::L_SHIFT) * (BetaB_derivative(Globals::L_SHIFT) + delta_derivative(Globals::L_SHIFT)) * sin(Globals::omega / constants::c * constants::R_star * integral);
+  else
+    return constants::PI / 2 + BetaB(R) + delta(R) - constants::c / constants::R_star / Globals::omega / Lambda(Globals::L_SHIFT) * (BetaB_derivative(Globals::L_SHIFT) + delta_derivative(Globals::L_SHIFT)) * sin(Globals::omega / constants::c * constants::R_star * integral);
+}
+
+double approximate_solution_theta1(double R, int mode){
+  double integral;
+  integral = integrate(Lambda, 0, R);
+  if (mode == 1)
+    return -constants::c / constants::R_star / Globals::omega / Lambda(R) * (BetaB_derivative(R) + delta_derivative(R)) - 1 / Q(R) + 
+  constants::c / constants::R_star / Globals::omega / Lambda(Globals::L_SHIFT) * (BetaB_derivative(Globals::L_SHIFT) + delta_derivative(Globals::L_SHIFT)) * cos(Globals::omega / constants::c * constants::R_star * integral);
+  else 
+    return constants::c / constants::R_star / Globals::omega / Lambda(R) * (BetaB_derivative(R) + delta_derivative(R)) + 1 / Q(R) - 
+  constants::c / constants::R_star / Globals::omega / Lambda(Globals::L_SHIFT) * (BetaB_derivative(Globals::L_SHIFT) + delta_derivative(Globals::L_SHIFT)) * cos(Globals::omega / constants::c * constants::R_star * integral);
 }
