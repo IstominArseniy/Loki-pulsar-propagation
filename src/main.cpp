@@ -57,22 +57,9 @@ int main(int argc, char* argv[]) {
     // attempt to avoid initial osc. region
     x1 = find_initial_point();
     // x1 = 100;
-    cout << x1 << endl;
-    // for(int i=800; i<1700; i+=50){
-    //   // std::cout<<std::fabs(omegaB(i) / (Globals::gamma0 * gammaU(i) * omegaW(i)))<< " ";
-    //   std::cout << omegaW(i) << " ";
-    //   //std::cout<<Lambda(i) << " ";
-    // }
     // x2 = 1.5 * Globals::RESCAPE;
     x2 = Globals::RLC;
     // Initial values />
-    // if (Globals::mode == 0) { // X-mode
-    //   dep_vars[0] = BetaB(x1) + delta(x1) + constants::PI / 2.0;
-    //   dep_vars[1] = Arcsinh(1.0 / Q(x1)) / 2.0;
-    // } else { // O-mode
-    //   dep_vars[0] = BetaB(x1) + delta(x1);
-    //   dep_vars[1] = Arcsinh(-1.0 / Q(x1)) / 2.0;
-    // }
     dep_vars[0] = approximate_solution_theta0(x1, Globals::mode);
     dep_vars[1] = approximate_solution_theta1(x1, Globals::mode);
     // </ Initial values
