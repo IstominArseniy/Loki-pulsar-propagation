@@ -55,17 +55,17 @@ int main(int argc, char* argv[]) {
     // cout << r_perp(0) << " " << phi_pc(0) << endl;
     double x1, x2, dep_vars[2];
     // attempt to avoid initial osc. region
-    x1 = find_initial_point();
+    x1 = find_initial_point(false);
+    std::cout << x1 << std::endl;
     // x1 = 100;
-    // x2 = 1.5 * Globals::RESCAPE;
-    x2 = Globals::RLC;
+    x2 = 1.5 * Globals::RESCAPE;
+    // x2 = Globals::RLC;
     // Initial values />
     dep_vars[0] = approximate_solution_theta0(x1, Globals::mode);
     dep_vars[1] = approximate_solution_theta1(x1, Globals::mode);
     // </ Initial values
     double PA = dep_vars[0] * 180 / constants::PI;
     //double RM = integrate(RM_dencity, Globals::R_em, Globals::RLC);
-    //std::cout << RM_dencity(Globals::R_em) << " " << RM_dencity(Globals::RLC) << " " << RM << " " << Globals::R_em * 1e6 << std::endl;
     double tau = constants::PI * constants::R_star * integrate(dtau, x1, Globals::RLC) / (constants::c * Globals::omega);
     // testing absorbtion position ---------
     double dx = (Globals::RLC - x1) / 100;

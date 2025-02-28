@@ -258,32 +258,39 @@ double dtau (double R) {
   return pow(omegaP(R), 2) * fDist (fabs(omegaB(R)) / (omegaW(R) * gammaU(R)));
 }
 
-double find_initial_point() {
+double find_initial_point(bool use_binary_search) {
 /*
 This function find a distance from emission point where oscillations fade out but p.a. is still strictly
 following beta + delta. 
 This point is determined from the condition |Lambda_derivative / Lambda^2 * 2 * c / omega| ~ 1 using binary search
 */
   double freq0 = 0.1;
-  double n_iter=0;
-  // cout << fabs(Lambda_derivative(0) / pow(Lambda(0), 2) * 2 * constants::c / Globals::omega) << endl;
-  if(fabs(Lambda_derivative(0) / pow(Lambda(0), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0)
-    return Globals::L_SHIFT; //shift to avoid zero kB angle
-  double R_left = Globals::L_SHIFT, R_right = Globals::RLC / 10, R_cur; 
-  R_cur = (R_left + R_right) / 2;
-  while(fabs(fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c  / constants::R_star/ Globals::omega)  - freq0) > 0.01 && n_iter < 30){
+  if(use_binary_search){
+    double n_iter=0;
+    if(fabs(Lambda_derivative(0) / pow(Lambda(0), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0)
+      return Globals::L_SHIFT; //shift to avoid zero kB angle
+    double R_left = Globals::L_SHIFT, R_right = Globals::RLC / 10, R_cur; 
     R_cur = (R_left + R_right) / 2;
-    n_iter++;
-    // cout << fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / Globals::omega) << endl;
-    if(fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0){
-      R_right = R_cur;
+    while(fabs(fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c  / constants::R_star/ Globals::omega)  - freq0) > 0.01 && n_iter < 30){
+      R_cur = (R_left + R_right) / 2;
+      n_iter++;
+      if(fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0){
+        R_right = R_cur;
+      }
+      else{
+        R_left = R_cur; 
+      }
     }
-    else{
-      R_left = R_cur; 
-    }
-    //cout << R_left << " " << R_cur << " " << R_right << " " << fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2) << endl;
+    return R_cur;
   }
-  return R_cur;
+
+  else{
+    double cr_R = Globals::L_SHIFT, step = 10;
+    while(fabs(Lambda_derivative(cr_R+step) / pow(Lambda(cr_R+step), 2) * 2 * constants::c / constants::R_star / Globals::omega) < freq0){
+      cr_R += step;
+    }
+    return cr_R;
+  }
 }
 
 double approximate_solution_theta0(double R, int mode){

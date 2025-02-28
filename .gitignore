@@ -4,6 +4,7 @@ bin/data/
 # DAT files #
 *.dat
 
+
 # Images #
 *.eps
 *.png

@@ -1,18 +1,18 @@
-B12              2.0        # Surface B-field in 10^12 Gs
-Period           0.288          # Rotation period in sec
+B12              3.2        # Surface B-field in 10^12 Gs
+Period           0.346          # Rotation period in sec
 freqGHz          0.6         # Radiation frequency in GHz
 
 lambda           300.0      # Plasma multiplicity # normally 10000
 gamma0           50.0       # Plasma mean gamma factor # normally 50
 f0               0.5         # Polar Cap gap width # normally 0.5
-R_em             10.0        # Emission radius in star radii
+R_em             15.0        # Emission radius in star radii
 
 mode             0           # 1 = O-mode & 0 = X-mode
 fr               1.0         # Split-monopole parameter
 fphi             1.0         # Split-monopole parameter
 
-alpha_deg        87.3
-beta_deg         2.3
+alpha_deg        90.4
+beta_deg         -3.6
 
 phi_start        -15.0       # Start from phase
 phi_end          15.0        # End with phase
