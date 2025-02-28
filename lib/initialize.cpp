@@ -146,11 +146,7 @@ void initialize(int argc, char* argv[]) {
   define_Globals();
 
   Globals::RUN_ID = read_from_file_str(Globals::input_name, "run_id", "my_run");
-  cout << "RUN_ID: " << Globals::RUN_ID << "\n\n";
 
-  cout << "\nR_esc: " << Globals::RESCAPE << endl;
-  cout << "R_A: " << Globals::ROMODE << endl;
-  cout << "R_lc: " << Globals::RLC << endl << endl;
 
   string MODE;
   if (Globals::mode == 0) MODE = "X-mode";

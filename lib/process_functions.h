@@ -22,3 +22,5 @@ double theta_kb (double R);
 double find_initial_point();
 double dLambda_dl(double R);
 double RM_dencity(double R);
+double approximate_solution_theta0(double R, int mode);
+double approximate_solution_theta1(double R, int mode);
