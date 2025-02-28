@@ -70,6 +70,7 @@ int main(int argc, char* argv[]) {
   auto phases = find_thread_phases(phi_start_global, phi_end_global, phi_t_step, size, rank);
   phi_t_start = phases.first;
   phi_t_end = phases.second;
+  // std::cout << phi_t_start << " " << phi_t_end << std::endl;
   //--------------------------------------------------------------------
   //INITIAL INFORMATION-------------------------------------------------
   if(rank==0){
@@ -88,8 +89,8 @@ int main(int argc, char* argv[]) {
       ofstream output3(Globals::out_path + "/" + Globals::RUN_ID + "_RMs.dat");
       ofstream output4(Globals::out_path + "/" + Globals::RUN_ID + "PAs.dat");
     */
-    ofstream output(global_data_path + "/" + Globals::RUN_ID + "_" + to_string(Globals::PHI0 * 180 / constants::PI) + ".dat");
     Globals::PHI0 = phi_t * constants::PI / 180.0;
+    ofstream output(global_data_path + "/" + Globals::RUN_ID + "_" + to_string(Globals::PHI0 * 180 / constants::PI) + ".dat");
     findInitPoints (Globals::PHI0);
     // cout << r_perp(0) << " " << phi_pc(0) << endl;
     double x1, x2, dep_vars[2];
