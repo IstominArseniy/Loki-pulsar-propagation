@@ -48,8 +48,6 @@ int main(int argc, char* argv[]) {
   } 
   //-----------------------------------------------------------------
 
-  // SIMULATION STARTS HERE />
-
   double phi_start_global = read_from_file(Globals::input_name, "phi_start");
   double phi_end_global = read_from_file(Globals::input_name, "phi_end");
   double phi_t_step = read_from_file(Globals::input_name, "phi_step");
@@ -70,7 +68,9 @@ int main(int argc, char* argv[]) {
   auto phases = find_thread_phases(phi_start_global, phi_end_global, phi_t_step, size, rank);
   phi_t_start = phases.first;
   phi_t_end = phases.second;
-  // std::cout << phi_t_start << " " << phi_t_end << std::endl;
+  //--------------------------------------------------------------------
+  //DATA STORAGE TO SEND TO ZERO THREAD---------------------------------
+  // int Nsteps = (phi_t_end - phi_t_start) / phi_t_step;
   //--------------------------------------------------------------------
   //INITIAL INFORMATION-------------------------------------------------
   if(rank==0){
@@ -80,7 +80,8 @@ int main(int argc, char* argv[]) {
     cout << "R_lc: " << Globals::RLC << endl << endl;
   }
   //--------------------------------------------------------------------
-  
+
+  // SIMULATION STARTS HERE />
   for (double phi_t = phi_t_start; phi_t < phi_t_end; phi_t += phi_t_step) { // Phase switch
     /*
       ofstream output0(Globals::out_path + "/" + Globals::RUN_ID + "_0.dat");
@@ -125,6 +126,25 @@ int main(int argc, char* argv[]) {
     output.close();
     //std::cout << (dep_vars[0] - PA0_rad) << " " << dep_vars[0] * 180 / constants::PI << " " <<  PA0_rad * 180 / constants::PI << std::endl;
   }
+  //DATA REARANGEMENT---------------------------------------------
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 0){ // should be done only by one thread
+    ofstream output0(Globals::out_path + "/" + Globals::RUN_ID + "_0.dat");
+    ofstream output1(Globals::out_path + "/" + Globals::RUN_ID + "_1.dat");
+    for (const auto & entry : fs::directory_iterator(global_data_path)){
+        std::cout << entry.path() << std::endl;
+        ifstream in(entry.path());
+        double phase, I0, V0, PA0, I1, V1, PA1;
+        in >> phase >> I0 >> V0 >> PA0;
+        in >> phase >> I1 >> V1 >> PA1;
+        in.close();
+        output0 << phase << " " << I0 << " " << V0 << " " << PA0 << std::endl;
+        output1 << phase << " " << I1 << " " << V1 << " " << PA1 << std::endl;
+    }
+    output0.close();
+    output1.close();
+  }
+  //-------------------------------------------------------------
   MPI_Finalize();
 	return 0;
 }
