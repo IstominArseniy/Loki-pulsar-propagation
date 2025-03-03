@@ -69,9 +69,6 @@ int main(int argc, char* argv[]) {
   phi_t_start = phases.first;
   phi_t_end = phases.second;
   //--------------------------------------------------------------------
-  //DATA STORAGE TO SEND TO ZERO THREAD---------------------------------
-  // int Nsteps = (phi_t_end - phi_t_start) / phi_t_step;
-  //--------------------------------------------------------------------
   //INITIAL INFORMATION-------------------------------------------------
   if(rank==0){
     cout << "RUN_ID: " << Globals::RUN_ID << "\n\n";
@@ -83,13 +80,6 @@ int main(int argc, char* argv[]) {
 
   // SIMULATION STARTS HERE />
   for (double phi_t = phi_t_start; phi_t < phi_t_end; phi_t += phi_t_step) { // Phase switch
-    /*
-      ofstream output0(Globals::out_path + "/" + Globals::RUN_ID + "_0.dat");
-      ofstream output1(Globals::out_path + "/" + Globals::RUN_ID + "_1.dat");
-      ofstream output2(Globals::out_path + "/" + Globals::RUN_ID + "_log.dat");
-      ofstream output3(Globals::out_path + "/" + Globals::RUN_ID + "_RMs.dat");
-      ofstream output4(Globals::out_path + "/" + Globals::RUN_ID + "PAs.dat");
-    */
     Globals::PHI0 = phi_t * constants::PI / 180.0;
     ofstream output(global_data_path + "/" + Globals::RUN_ID + "_" + to_string(Globals::PHI0 * 180 / constants::PI) + ".dat");
     findInitPoints (Globals::PHI0);
@@ -131,8 +121,12 @@ int main(int argc, char* argv[]) {
   if(rank == 0){ // should be done only by one thread
     ofstream output0(Globals::out_path + "/" + Globals::RUN_ID + "_0.dat");
     ofstream output1(Globals::out_path + "/" + Globals::RUN_ID + "_1.dat");
+    /*
+      POSSIBLE ADDITIONAL OUTPUTS
+      ofstream output3(Globals::out_path + "/" + Globals::RUN_ID + "_RMs.dat");
+      ofstream output4(Globals::out_path + "/" + Globals::RUN_ID + "PAs.dat");
+    */
     for (const auto & entry : fs::directory_iterator(global_data_path)){
-        std::cout << entry.path() << std::endl;
         ifstream in(entry.path());
         double phase, I0, V0, PA0, I1, V1, PA1;
         in >> phase >> I0 >> V0 >> PA0;

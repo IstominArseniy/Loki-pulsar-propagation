@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+import pandas as pd
 
 def shift_angle(angle):
     angle = np.asarray(angle)
@@ -40,10 +41,12 @@ fig, axs = plt.subplots(2, height_ratios=[1, 4])
 Is = np.array(Is)
 Vs = np.array(Vs)
 Ls = np.sqrt(Is**2 - Vs**2)
-axs[0].scatter(phases, PAs, c='black', s=3)
-axs[1].plot(phases, Is, c='black', label='I')
-axs[1].plot(phases, Vs, c='blue', label='V')
-axs[1].plot(phases, Ls, c='red', label='L')
+data = pd.DataFrame({'phase':phases, 'I':Is.tolist(), 'V':Vs.tolist(), 'L':Ls.tolist(), 'PA':PAs})
+data = data.sort_values('phase')
+axs[0].scatter(data['phase'], data['PA'], c='black', s=3)
+axs[1].plot(data['phase'], data['I'], c='black', label='I')
+axs[1].plot(data['phase'], data['V'], c='blue', label='V')
+axs[1].plot(data['phase'], data['L'], c='red', label='L')
 fig.legend()
 fig.show()
 fig.savefig('IVLPA_output.png', dpi=400, bbox_inches='tight')
