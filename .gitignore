@@ -4,6 +4,9 @@ bin/data/
 # DAT files #
 *.dat
 
+# Input files #
+*.input
+
 # Images #
 *.eps
 *.png
@@ -24,3 +27,5 @@ bin/data/
 .DS_Store
 .ipynb*/
 
+# exectuables and inputs/outputs
+/bin/*
