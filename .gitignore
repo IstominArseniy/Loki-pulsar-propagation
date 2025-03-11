@@ -26,3 +26,6 @@ bin/
 # mac OS files #
 .DS_Store
 .ipynb*/
+
+# VSCode folder
+.vscode/
