@@ -1,5 +1,5 @@
 # Folders #
-bin/data/
+bin/
 
 # DAT files #
 *.dat
@@ -26,6 +26,3 @@ bin/data/
 # mac OS files #
 .DS_Store
 .ipynb*/
-
-# exectuables and inputs/outputs
-/bin/*
