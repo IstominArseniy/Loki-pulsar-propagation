@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
     double x1, x2, dep_vars[2];
     // attempt to avoid initial osc. region
     x1 = find_initial_point(false);
-    std::cout << x1 << std::endl;
+    // std::cout << x1 << std::endl;
     // x1 = 100;
     x2 = 1.5 * Globals::RESCAPE;
     // x2 = Globals::RLC;
