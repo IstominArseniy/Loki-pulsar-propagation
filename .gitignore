@@ -1,5 +1,5 @@
 # Folders #
-bin/*
+/bin/*
 
 # DAT files #
 *.dat
@@ -29,4 +29,4 @@ bin/*
 .ipynb*/
 
 # VSCode folder
-.vscode/
+/.vscode/
