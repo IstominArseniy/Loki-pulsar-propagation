@@ -1,11 +1,12 @@
 # Folders #
-bin/
+bin/*
 
 # DAT files #
 *.dat
 
 # Input files #
 *.input
+
 
 # Images #
 *.eps

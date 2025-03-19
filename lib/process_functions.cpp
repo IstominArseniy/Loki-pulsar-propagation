@@ -10,6 +10,7 @@
 #include "initialize.h"
 #include "integrator.h" 
 using namespace std;
+using Eigen::Vector3d;
 
 // most of functions should be local
 
@@ -21,104 +22,95 @@ double sgn (double value) {
   }
 }
 
-vector <double> vMoment (double R) {
-  vector <double> mvec(3);
-  mvec[0] = sin(Globals::alpha) * cos(Globals::PHI0 + R / Globals::RLC);
-  mvec[1] = sin(Globals::alpha) * sin(Globals::PHI0 + R / Globals::RLC);
-  mvec[2] = cos(Globals::alpha);
-  return mvec;
-} // Moment vector
-vector <double> vR (double R) {
-  vector <double> n0(3);
-  n0[0] = sin(Globals::theta_em) * cos(Globals::phi_em);
-  n0[1] = sin(Globals::theta_em) * sin(Globals::phi_em);
-  n0[2] = cos(Globals::theta_em);
 
-  vector <double> o(3);
-  o[0] = sin(Globals::dzeta);
-  o[1] = 0.0;
-  o[2] = cos(Globals::dzeta);
-  return SUM(TIMES(Globals::R_em, n0), TIMES(R, o));
-} // Propagation radius vector
+Vector3d vMoment (double R) {
+  /*
+  Magnetic momentum unit vector
+  */
+  Vector3d mvec;
+  mvec(0) = sin(Globals::alpha) * cos(Globals::PHI0 + R / Globals::RLC);
+  mvec(1) = sin(Globals::alpha) * sin(Globals::PHI0 + R / Globals::RLC);
+  mvec(2) = cos(Globals::alpha);
+  return mvec;
+} 
+
+Vector3d vR (double R) {
+  /*
+  Propagation radius vector
+  */
+  Vector3d n0(3); // unit vector along the ray
+  n0(0) = sin(Globals::theta_em) * cos(Globals::phi_em);
+  n0(1) = sin(Globals::theta_em) * sin(Globals::phi_em);
+  n0(2) = cos(Globals::theta_em);
+  return Globals::R_em * n0 + R * Globals::o;
+} 
+
 double psi_m (double R) {
+  /*
+  Angle between magnetic momentum and point on the ray
+  */
   return ANGLE(vR(R), vMoment(R));
 }
 
-vector <double> vBdipole (double R) {
-  vector <double> m;
-  vector <double> n;
-  m = vMoment (R);
-  n = NORMALIZE(vR(R));
-  return SUM(TIMES(3.0 * SCALAR(m, n), n), TIMES(-1.0, m));
-}
-vector <double> vBsplit (double R) {
-  double Rr = NORM(vR(R));
-  double Rxy = sqrt(vR(R)[0] * vR(R)[0] + vR(R)[1] * vR(R)[1]);
 
-  double costh = SCALAR(NORMALIZE(vR(R)), NORMALIZE(Globals::vOmega));
-  double sinth = sqrt(1 - costh * costh);
-  double cosphi = vR(R)[0] / Rxy;
-  double sinphi = vR(R)[1] / Rxy;
-  // double phi = acos (cosphi);
-
-  // double psi1 = costh * cos(Globals::alpha) + sinth * sin(Globals::alpha) * cos(phi - Globals::PHI0 + Rr / Globals::RLC);
-
-  double Br = (Globals::fr / (Rr * Rr * Globals::RLC)); // * tanh(psi1 / 0.1);
-  double Bphi = -(Globals::fphi * Globals::fr * sinth / (Rr * Globals::RLC * Globals::RLC)); // * tanh(psi1 / 0.1);
-
-  Br *= pow(Rr, 3);
-  Bphi *= pow(Rr, 3);
-
-  vector <double> temp(3);
-  temp[0] = Br * sinth * cosphi - Bphi * sinphi;
-  temp[1] = Br * sinth * sinphi + Bphi * cosphi;
-  temp[2] = Br * costh;
-  return temp;
+/// @param vR - radius vector to the point
+/// @param m - magnetic moment vector
+/// @return Magnetic field vector in arbitrary point in magnetosphere 
+Vector3d Bfield(Vector3d vR, Vector3d m){
+  double Rdist = vR.norm();
+  Vector3d n = vR.normalized();
+  Vector3d Bdipole = 3 * m.dot(n) * n - m; // Dipole component
+  Vector3d Bwind; //Wind component
+  Bwind(0) = Rdist/Globals::RLC * Globals::fr * n(0) - std::pow(Rdist/Globals::RLC, 2)* 
+  Globals::fphi * Globals::fr * (-n(1));
+  Bwind(1) = Rdist/Globals::RLC * Globals::fr * n(1) - std::pow(Rdist/Globals::RLC, 2)* 
+  Globals::fphi * Globals::fr * n(0);
+  Bwind(2) = Rdist/Globals::RLC * Globals::fr * n(2);
+  return Bdipole + Bwind;
 }
 
-vector <double> vB (double R) {
-  if (Globals::fphi == 0 && Globals::fr == 0) {
-    return vBdipole(R);
-  } else {
-    return SUM(vBsplit(R), vBdipole(R));
-  }
+
+/// @brief Magneic field on the ray
+/// @param R 
+/// @return B field vector
+Vector3d vB (double R) {
+  return Bfield(vR(R), vMoment(R));
 }
 
-vector <double> vb (double R) {
-  return NORMALIZE(vB(R));
+Vector3d vb (double R) {
+  return vB(R).normalized();
 }
 
+/// @param R 
+/// @return angle between magnetic field line and direction to the observer (in radians)
 double theta_kb (double R) {
-  vector <double> o(3);
-  o[0] = sin(Globals::dzeta);
-  o[1] = 0.0;
-  o[2] = cos(Globals::dzeta);
-  return ANGLE(vB(R), o);
+  return ANGLE(vB(R), Globals::o);
 }
 
-vector <double> vBetaR (double R) {
-  return TIMES(constants::R_star / constants::c, CROSS(Globals::vOmega, vR(R)));
+Vector3d vBetaR (double R) {
+  return constants::R_star / constants::c * Globals::vOmega.cross(vR(R));
 }
-vector <double> vUdr (double R) {
-  vector <double> o(3);
-  o[0] = sin(Globals::dzeta);
-  o[1] = 0.0;
-  o[2] = cos(Globals::dzeta);
 
-  vector <double> vn;
-  vector <double> vm;
-  vn = NORMALIZE(SUM(o, TIMES(-SCALAR(o, vb(R)), vb(R))));
-  vm = NORMALIZE(CROSS(vb(R), vn));
+/// @param R 
+/// @return E cross B drift speed vector, normalized to the speed of light
+Vector3d vUdr (double R) {  
+  Vector3d vn;
+  Vector3d vm;
+  vn = (Globals::o - Globals::o.dot(vb(R)) * vb(R)).normalized();
+  vm = (vb(R).cross(vn)).normalized();
 
-  vector <double> temp(3);
-  temp[0] = SCALAR(vBetaR(R), vn);
-  temp[1] = SCALAR(vBetaR(R), vm);
-  if (temp[0] * temp[0] + temp[1] * temp[1] >= 1.0) {
+  Vector3d temp;
+  temp(0) = vBetaR(R).dot(vn);
+  temp(1) = vBetaR(R).dot(vm);
+  if (temp(0)*temp(0) + temp(1) * temp(1) >= 1.0) {
     throw_error("ERROR: vUdr > 1.");
   }
-  temp[2] = sqrt(1 - pow(temp[0], 2) - pow(temp[1], 2));
+  temp(2) = std::sqrt(1 - pow(temp(0), 2) - pow(temp(1), 2));
   return temp;
 }
+
+/// @param R 
+/// @return delta parameter form Kravtsov-Orlov equations
 double delta (double R) {
   double vx = vUdr(R) [0];
   double vy = vUdr(R) [1];
@@ -127,53 +119,66 @@ double delta (double R) {
   double sign = sgn (- vy * costh / sqrt(pow(sinth - vx, 2) + pow(costh * vy , 2)));
   return sign * acos((sinth - vx) / sqrt(pow(sinth - vx, 2) + pow(costh * vy , 2)));
 }
+
+
+/// @param R 
+/// @return angular coordinate of the ray vector in the plane, perpendicular to the field line
 double BetaB (double R) {
-  vector <double> o(3);
-  o[0] = sin(Globals::dzeta);
-  o[1] = 0.0;
-  o[2] = cos(Globals::dzeta);
-
-  vector <double> XX;
-  vector <double> YY;
-  XX = NORMALIZE(SUM(Globals::vOmega, TIMES(-SCALAR(o, Globals::vOmega), o)));
-  YY = CROSS(o, XX);
-
-  double bx = SCALAR(XX, vB(R));
-  double by = SCALAR(YY, vB(R));
-  // double bb = sqrt (bx * bx + by * by);
-  // return acos (bx / bb) * sgn (by);
+  Vector3d XX;
+  Vector3d YY;
+  XX = (Globals::vOmega - Globals::o.dot(Globals::vOmega) * Globals::o).normalized();
+  YY = Globals::o.cross(XX);
+  double bx = XX.dot(vB(R));
+  double by = YY.dot(vB(R));
   return atan(by / bx);
 }
 
+/// @param R 
+/// @return derivative of the delta parameter along the ray
+/// @note distnace variable is normalized to the star radius
 double delta_derivative(double R){
   double dl = 1;
   return (delta(R + dl) - delta(R))/dl;
 }
 
+
+/// @param R 
+/// @return derivative of the BetaB angle along the ray
+/// @note distnace variable is normalized to the star radius
 double BetaB_derivative(double R){
   double dl = 1;
   return (BetaB(R + dl) - BetaB(R))/dl;
 }
+
+/// @param R 
+/// @return distance from the field line footpoint to the polar cap center
+/// @note Only for dipolar magnetic field!!!
 double r_perp(double R){
-  return pow(sin(psi_m(R)), 2) * Globals::RLC / NORM(vR(R));
+  return std::pow(std::sin(psi_m(R)), 2) * Globals::RLC / vR(R).norm();
 }
 
+/// @param R 
+/// @return polar cap angle cooridnate of the magnetic field line footpoint.
+/// Angle is counted from the East-West line on the polar cap
+/// @note Applicable only for magnetic fields with zero torsion
 double phi_pc(double R){
-  vector<double> m_perp(3);
-  m_perp[2] = sqrt(pow(vMoment(R)[0], 2) + pow(vMoment(R)[1], 2));
-  m_perp[0] = -vMoment(R)[2] *  vMoment(R)[0] / sqrt(pow(vMoment(R)[0], 2) + pow(vMoment(R)[1], 2));
-  m_perp[1] = -vMoment(R)[2] *  vMoment(R)[1] / sqrt(pow(vMoment(R)[0], 2) + pow(vMoment(R)[1], 2));
-  // cout << ANGLE(m_perp, vMoment(R)) << endl;
-  vector<double> v_perp;
-  v_perp = SUM(vR(R), TIMES(-SCALAR(vR(R),  vMoment(R)), vMoment(R)));
-  if(NORM(CROSS(m_perp, v_perp)) >= 0)
-    return constants::PI / 2 + ANGLE(v_perp, m_perp); //REDO ANGLE
+  Vector3d m_perp; // Vector, perpendicular to the magnetic axis and e_phi basis vector
+  m_perp(0) = -vMoment(R)(2) *  vMoment(R)(0) / std::sqrt(std::pow(vMoment(R)(0), 2) + std::pow(vMoment(R)(1), 2));
+  m_perp(1) = -vMoment(R)(2) *  vMoment(R)[1] / std::sqrt(pow(vMoment(R)(0), 2) + std::pow(vMoment(R)(1), 2));
+  m_perp(2) = std::sqrt(std::pow(vMoment(R)[0], 2) + std::pow(vMoment(R)[1], 2));
+  Vector3d v_perp = vR(R) - vR(R).dot(vMoment(R)) * vMoment(R); // projection of vR, perpendicular to the magntic axis
+  if((m_perp.cross(v_perp)).norm() >= 0)
+    return constants::PI / 2 + ANGLE(v_perp, m_perp); //REDO ANGLE (?!)
   else
     return constants::PI / 2 - ANGLE(v_perp, m_perp);
 }
 
+/// @brief Plasma density transvers profile
+/// @param R 
+/// @return normalized plasma density
 double gFunc (double R) {
-  double f = pow(sin(psi_m(R)), 2) * Globals::RLC / NORM(vR(R));
+  // TODO interpolation flag
+  double f = std::pow(std::sin(psi_m(R)), 2) * Globals::RLC / vR(R).norm();
 	double theta = ANGLE(vR(R), Globals::vOmega);
 	double dtheta = 5.0 * constants::PI / 180.0;
 	double gap = 1.0;
@@ -183,49 +188,73 @@ double gFunc (double R) {
   // return Globals::dencity_interpolation.get_f(r_perp(R), phi_pc(R));
 }
 
+
+/// @param R 
+/// @return Plasma density in physical units (g/cm^3)
 double Ne(double R) {
-  double nGJ = SCALAR(Globals::vOmega, vB(R)) * (Globals::B0 / pow(NORM(vR(R)), 3)) / (2 * constants::PI * constants::c * constants::e);
+  double nGJ = Globals::vOmega.dot(vB(R)) * Globals::B0 / pow(vR(R).norm(), 3) / 
+  (2 * constants::PI * constants::c * constants::e);
   return Globals::lambda * gFunc (R) * nGJ;
 }
 
 double RM_dencity(double R){
-    return 2.62e-17 * Ne(R) / Globals::lambda * (Globals::B0 / pow(NORM(vR(R)), 3)) * cos(theta_kb(R));
+    return 2.62e-17 * Ne(R) / Globals::lambda * (Globals::B0 / std::pow(vR(R).norm(), 3)) * std::cos(theta_kb(R));
 }
 
+/// @param R 
+/// @return Local cyclotron frequency (s^-1)
 double omegaB (double R) {
-  return -constants::e * NORM(vB(R)) * (Globals::B0 / pow(NORM(vR(R)), 3)) / (constants::me * constants::c);
+  return -constants::e * vB(R).norm() * (Globals::B0 / std::pow(vR(R).norm(), 3)) / (constants::me * constants::c);
 }
 
 double omegaW (double R) {
-  double vx = vUdr(R) [0];
-  double vz = vUdr(R) [2];
+  double vx = vUdr(R)(0);
+  double vz = vUdr(R)(2);
   double sinth = sin(theta_kb(R));
   double costh = cos(theta_kb(R));
   return Globals::omega * (1 - sinth * vx - costh * vz);
 }
+
+/// @param R 
+/// @return Local plasma frequency (s^-1)
 double omegaP (double R) {
-  return sqrt(4 * constants::PI * constants::e * constants::e * fabs(Ne(R)) / constants::me);
+  return std::sqrt(4 * constants::PI * constants::e * constants::e * std::fabs(Ne(R)) / constants::me);
 }
 
+
+/// @param R 
+/// @return Q parameter from Kravtsov-Orlov equations
 double Q (double R) {
-  double vx = vUdr(R) [0];
-  double vy = vUdr(R) [1];
-  double vz = vUdr(R) [2];
-  double sinth = sin(theta_kb(R));
-  double costh = cos(theta_kb(R));
-  return Globals::lambda * omegaB(R) * Globals::omega * (pow(sinth - vx, 2) + pow(vy * costh, 2)) / (2 * pow(Globals::gamma0, 3) * pow(omegaW(R), 2) * (costh * (1 - vx * vx - vy * vy) - vz * (1.0 - sinth * vx)));
+  double vx = vUdr(R)(0);
+  double vy = vUdr(R)(1);
+  double vz = vUdr(R)(2);
+  double sinth = std::sin(theta_kb(R));
+  double costh = std::cos(theta_kb(R));
+  return Globals::lambda * omegaB(R) * Globals::omega * (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2))
+   / (2 * std::pow(Globals::gamma0, 3) * std::pow(omegaW(R), 2) * (costh * (1 - vx * vx - vy * vy) - vz * (1.0 - sinth * vx)));
 }
 
+/// @brief Particle energy distribution function (both for e- and e+)
+/// @param gamma 
+/// @return f(gamma) | dN = f(gamma) d gamma
 double fDist (double gamma) {
   return ((6.0 * Globals::gamma0) / (pow(2.0, 1.0/6.0) * constants::PI)) * (pow(gamma, 4) / (2.0 * pow(gamma, 6) + pow(Globals::gamma0, 6)));
 }
 
+
+/// @param R 
+/// @return drift velocity gamma factor
 double gammaU (double R) {
-  double vx = vUdr(R) [0];
-  double vy = vUdr(R) [1];
-  return pow(1 - vx * vx - vy * vy, -0.5);
+  double vx = vUdr(R)(0);
+  double vy = vUdr(R)(1);
+  return std::pow(1 - vx * vx - vy * vy, -0.5);
 }
 
+
+/// @brief Auxilary function for Lambda parameter calculation (from Kravtsov-Orlov equations).
+/// @param gamma 
+/// @param R 
+/// @return Integral of certain function
 double INTEGRAL (double gamma, double R) {
   double cA = pow(gammaU(R) * omegaW(R) / omegaB(R), 2);
   return -(pow(2, 2.0 / 3.0)*(-2*sqrt(3)*atan((2*pow(2, 1.0 / 3.0)*pow(gamma,2) - pow(Globals::gamma0,2))/
@@ -240,50 +269,67 @@ double INTEGRAL (double gamma, double R) {
           (2.*pow(2, 1.0 / 6.0)*constants::PI*pow(Globals::gamma0,3)*(2 + pow(Globals::gamma0,6)*pow(cA,3)));
 }
 
+/// @param R 
+/// @return Lambda parameter form Kravtsov-Orlov equations
 double Lambda (double R) {
-  double vx = vUdr(R) [0];
-  double vy = vUdr(R) [1];
-  double sinth = sin(theta_kb(R));
-  double costh = cos(theta_kb(R));
+  double vx = vUdr(R)(0);
+  double vy = vUdr(R)(1);
+  double sinth = std::sin(theta_kb(R));
+  double costh = std::cos(theta_kb(R));
   double avrg = INTEGRAL(1000000.0, R) - INTEGRAL(0.0, R);
-  return (-1.0 / 2.0) * pow(omegaP(R) * gammaU(R) / omegaW(R), 2) * avrg * (pow(sinth - vx, 2) + pow(vy * costh, 2));
+  return (-1.0 / 2.0) * std::pow(omegaP(R) * gammaU(R) / omegaW(R), 2) * avrg *
+   (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2));
 }
 
+/// @param R 
+/// @return derivative of the Lambda parameter along the ray
+/// @note distnace variable is normalized to the star radius
 double Lambda_derivative(double R){
     double dl = 1;
     return (Lambda(R + dl) - Lambda(R))/dl;
 }
 
+/// @param R 
+/// @return differential optical dpeth
+/// @note should be integrated along the ray to obtain total optical depth
 double dtau (double R) {
-  return pow(omegaP(R), 2) * fDist (fabs(omegaB(R)) / (omegaW(R) * gammaU(R)));
+  return std::pow(omegaP(R), 2) * fDist (std::fabs(omegaB(R)) / (omegaW(R) * gammaU(R)));
 }
 
-double find_initial_point() {
-/*
-This function find a distance from emission point where oscillations fade out but p.a. is still strictly
-following beta + delta. 
-This point is determined from the condition |Lambda_derivative / Lambda^2 * 2 * c / omega| ~ 1 using binary search
-*/
+/// @brief This function find a distance from emission point where oscillations fade out but p.a. is still strictly
+/// following beta + delta. 
+/// This point is determined from the condition |Lambda_derivative / Lambda^2 * 2 * c / omega| ~ 1 
+/// @param use_binary_search - flag, which determines wither to use binary search or not. Binary search can fail when 
+/// Lambda is not monotonous
+/// @return point, where integration of Kravtsov-Orlov equations can be started
+double find_initial_point(bool use_binary_search) {
   double freq0 = 0.1;
-  double n_iter=0;
-  // cout << fabs(Lambda_derivative(0) / pow(Lambda(0), 2) * 2 * constants::c / Globals::omega) << endl;
-  if(fabs(Lambda_derivative(0) / pow(Lambda(0), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0)
-    return Globals::L_SHIFT; //shift to avoid zero kB angle
-  double R_left = Globals::L_SHIFT, R_right = Globals::RLC / 10, R_cur; 
-  R_cur = (R_left + R_right) / 2;
-  while(fabs(fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c  / constants::R_star/ Globals::omega)  - freq0) > 0.01 && n_iter < 30){
+  if(use_binary_search){
+    double n_iter=0;
+    if(std::fabs(Lambda_derivative(0) / std::pow(Lambda(0), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0)
+      return Globals::L_SHIFT; //shift to avoid zero kB angle
+    double R_left = Globals::L_SHIFT, R_right = Globals::RLC / 10, R_cur; 
     R_cur = (R_left + R_right) / 2;
-    n_iter++;
-    // cout << fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / Globals::omega) << endl;
-    if(fabs(Lambda_derivative(R_cur) / pow(Lambda(R_cur), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0){
-      R_right = R_cur;
+    while(std::fabs(std::fabs(Lambda_derivative(R_cur) / std::pow(Lambda(R_cur), 2) * 2 * constants::c  / constants::R_star/ Globals::omega)  - freq0) > 0.01 && n_iter < 30){
+      R_cur = (R_left + R_right) / 2;
+      n_iter++;
+      if(std::fabs(Lambda_derivative(R_cur) / std::pow(Lambda(R_cur), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0){
+        R_right = R_cur;
+      }
+      else{
+        R_left = R_cur; 
+      }
     }
-    else{
-      R_left = R_cur; 
-    }
-    //cout << R_left << " " << R_cur << " " << R_right << " " << fabs(constants::R_star * Lambda(R_cur) * Globals::omega / constants::c / 2) << endl;
+    return R_cur;
   }
-  return R_cur;
+
+  else{
+    double cr_R = Globals::L_SHIFT, step = 10;
+    while(std::fabs(Lambda_derivative(cr_R+step) / std::pow(Lambda(cr_R+step), 2) * 2 * constants::c / constants::R_star / Globals::omega) < freq0){
+      cr_R += step;
+    }
+    return cr_R;
+  }
 }
 
 double approximate_solution_theta0(double R, int mode){

@@ -35,9 +35,6 @@ using namespace std;
 */
 #include "../lib/diffeqsolver.h"
 
-void displayVector (vector <double> a) {
-    cout << endl << a[0] << endl << a[1] << endl << a[2] << endl;
-}
 
 int main(int argc, char* argv[]) {
   initialize(argc, argv);
@@ -82,20 +79,21 @@ int main(int argc, char* argv[]) {
   for (double phi_t = phi_t_start; phi_t < phi_t_end; phi_t += phi_t_step) { // Phase switch
     Globals::PHI0 = phi_t * constants::PI / 180.0;
     ofstream output(global_data_path + "/" + Globals::RUN_ID + "_" + to_string(Globals::PHI0 * 180 / constants::PI) + ".dat");
-    findInitPoints (Globals::PHI0);
+    setInitPoints();
     // cout << r_perp(0) << " " << phi_pc(0) << endl;
     double x1, x2, dep_vars[2];
     // attempt to avoid initial osc. region
-    x1 = find_initial_point();
+    x1 = find_initial_point(false);
+    std::cout << x1 << std::endl;
     // x1 = 100;
-    //cout << x1 << endl;
     x2 = 1.5 * Globals::RESCAPE;
+    // x2 = Globals::RLC;
+    // Initial values />
     dep_vars[0] = approximate_solution_theta0(x1, Globals::mode);
     dep_vars[1] = approximate_solution_theta1(x1, Globals::mode);
     // </ Initial values
     double PA = dep_vars[0] * 180 / constants::PI;
     //double RM = integrate(RM_dencity, Globals::R_em, Globals::RLC);
-    //std::cout << RM_dencity(Globals::R_em) << " " << RM_dencity(Globals::RLC) << " " << RM << " " << Globals::R_em * 1e6 << std::endl;
     double tau = constants::PI * constants::R_star * integrate(dtau, x1, Globals::RLC) / (constants::c * Globals::omega);
     double II0 = gFunc(0);
     double II = II0 * exp (-tau);
