@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <Eigen/Dense>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -12,6 +13,7 @@
 #include "functions.h"
 #include "initialize.h"
 using namespace std;
+using Eigen::Vector3d;
 
 // finding initial point of generation for dipole field b0 (along field line)
 
@@ -98,7 +100,8 @@ double Globals::theta_em, Globals::phi_em,
       Globals::alpha_deg, Globals::beta_deg, Globals::alpha, Globals::beta, Globals::dzeta,
       Globals::PHI0,
       Globals::R_em, Globals::RLC, Globals::RESCAPE, Globals::ROMODE, Globals::L_SHIFT;
-vector <double> Globals::vOmega;
+Vector3d Globals::vOmega;
+Vector3d Globals::o;
 interpolator2D Globals::dencity_interpolation;
 
 string Globals::RUN_ID, Globals::input_name, Globals::out_path, Globals::dencity_filename;
@@ -131,9 +134,8 @@ void define_Globals() {
   Globals::omega = 2.0 * constants::PI * Globals::freqGHz * 1.0e9; // Radiation circular frequency
   Globals::L_SHIFT = 1.0; // Shift to avoid zero k_B angle
 
-  Globals::vOmega.push_back(0.);
-  Globals::vOmega.push_back(0.);
-  Globals::vOmega.push_back(Globals::Omega);
+  Globals::vOmega << 0, 0, Globals::Omega;
+  Globals::o << std::sin(Globals::dzeta), 0, std::cos(Globals::dzeta);
 
   Globals::RLC = (constants::c / Globals::Omega) / constants::R_star;
   Globals::RESCAPE = 1.0e3 * pow(Globals::lambda / 1.0e4, 1.0/3.0) * pow(Globals::gamma0 / 100.0, -6.0/5.0) * pow(Globals::B0 / 1.0e12, 2.0/5.0) * pow(Globals::freqGHz, -2.0/5.0) * pow(Globals::Period, -1.0/5.0);

@@ -1,8 +1,10 @@
 #pragma PROCESS__UNCTIONS
-using namespace std;
+#include <Eigen/Dense>
+using Eigen::Vector3d;
 
-vector <double> vB(double R);
-vector <double> vBsplit(double R);
+
+Vector3d vB(double R);
+Vector3d vBsplit(double R);
 
 double delta (double R);
 double BetaB (double R);
@@ -15,13 +17,13 @@ double gammaU (double R);
 double omegaW (double R);
 double dtau (double R);
 double psi_m (double R);
-vector <double> vR (double R);
 double r_perp(double R);
 double phi_pc(double R);
 double gFunc (double R);
 
-vector <double> vMoment (double R);
-vector <double> vUdr (double R);
+Vector3d vR (double R);
+Vector3d vMoment (double R);
+Vector3d vUdr (double R);
 double theta_kb (double R);
 double find_initial_point(bool use_binary_search=true);
 double Lambda_derivative(double R);

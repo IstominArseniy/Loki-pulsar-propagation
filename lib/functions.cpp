@@ -1,7 +1,10 @@
 #include <vector>
 #include <math.h>
+#include <Eigen/Dense>
 #include "functions.h"
 using namespace std;
+
+using Eigen::Vector3d;
 
 double SCALAR (vector <double> vec1, vector <double> vec2) {
   return vec1[0] * vec2[0] + vec1[1] * vec2[1] + vec1[2] * vec2[2];
@@ -35,11 +38,10 @@ vector <double> NORMALIZE (vector <double> vec) {
   return TIMES(1.0 / NORM(vec), vec);
 } // Unitize given vector
 
-double ANGLE (vector <double> vec1, vector <double> vec2) {
-  // REDO with atan2 (?)
-  return 2 * atan2(NORM(SUM(TIMES(-1, NORMALIZE(vec1)), NORMALIZE(vec2))), NORM(SUM(NORMALIZE(vec1), NORMALIZE(vec2))));
-  // return acos(SCALAR(NORMALIZE(vec1), NORMALIZE(vec2)));
+double ANGLE (Vector3d vec1, Vector3d vec2) {
+  return 2 * atan2((vec2.normalized() - vec1.normalized()).norm(), (vec2.normalized() + vec1.normalized()).norm());
 } // Angle
+
 double Arcsinh(double x) {
   return log(x + sqrt(pow(x, 2.0) + 1.0));
 }

@@ -1,6 +1,7 @@
 #include "interpolator.h"
 
 #pragma INITIALIZE
+using Eigen::Vector3d;
 
 namespace Globals {
   extern double theta_em, phi_em,
@@ -12,8 +13,9 @@ namespace Globals {
         alpha_deg, beta_deg, alpha, beta, dzeta,
         PHI0,
         R_em, RLC, RESCAPE, ROMODE, L_SHIFT;
-  extern vector <double> vOmega;
-  extern string RUN_ID, input_name, out_path, dencity_filename;
+  extern Vector3d vOmega;
+  extern Vector3d o;
+  extern std::string RUN_ID, input_name, out_path, dencity_filename;
   extern interpolator2D dencity_interpolation;
 }
 
