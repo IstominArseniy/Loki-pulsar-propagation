@@ -12,74 +12,59 @@
 #include "constants.h"
 #include "functions.h"
 #include "initialize.h"
+#include "process_functions.h"
 using namespace std;
 using Eigen::Vector3d;
 
 // finding initial point of generation for dipole field b0 (along field line)
 
-vector <double> b0 (double th, double ph, double PHI0) {
-  vector <double> n0(3);
-  n0[0] = sin(th) * cos(ph);
-  n0[1] = sin(th) * sin(ph);
-  n0[2] = cos(th);
-
-  vector <double> m(3);
-  m[0] = sin(Globals::alpha) * cos(Globals::PHI0);
-  m[1] = sin(Globals::alpha) * sin(Globals::PHI0);
-  m[2] = cos(Globals::alpha);
-
-  //wind component
-  vector <double> bw(3);
-  bw[0] = Globals::R_em/Globals::RLC * Globals::fr * n0[0] - std::pow(Globals::R_em/Globals::RLC, 2)* 
-  Globals::fphi * Globals::fr * sin(th) * (-sin(ph));
-  bw[1] = Globals::R_em/Globals::RLC * Globals::fr * n0[1] - std::pow(Globals::R_em/Globals::RLC, 2)* 
-  Globals::fphi * Globals::fr * sin(th) * cos(ph);
-  bw[2] = Globals::R_em/Globals::RLC * Globals::fr * n0[2];
-  //--------------
-  return NORMALIZE(SUM(SUM(TIMES(3.0 * SCALAR(m, n0), n0), TIMES(-1.0, m)), bw));
-  // return NORMALIZE(SUM(TIMES(3.0 * SCALAR(m, n0), n0), TIMES(-1.0, m)));
-
+Vector3d b0 (double th, double ph) {
+  Vector3d n0(3);
+  n0(0) = sin(th) * cos(ph);
+  n0(1) = sin(th) * sin(ph);
+  n0(2) = cos(th);
+  Vector3d m(3);
+  m(0) = sin(Globals::alpha) * cos(Globals::PHI0);
+  m(1) = sin(Globals::alpha) * sin(Globals::PHI0);
+  m(2) = cos(Globals::alpha);
+  return Bfield(n0 * Globals::R_em, m);
 }
-double func1 (double x, double y, double PHI0) {
-  vector <double> o(3);
-  o[0] = sin(Globals::dzeta);
-  o[1] = 0.0;
-  o[2] = cos(Globals::dzeta);
-  return CROSS(b0(x, y, PHI0), o)[0];
+
+double func1 (double x, double y) {
+  return b0(x, y).cross(Globals::o)(0);
 }
-double func2 (double x, double y, double PHI0) {
-  vector <double> o(3);
-  o[0] = sin(Globals::dzeta);
-  o[1] = 0.0;
-  o[2] = cos(Globals::dzeta);
-  return CROSS(b0(x, y, PHI0), o)[1];
+
+double func2 (double x, double y) {
+  return b0(x, y).cross(Globals::o)(1);
 }
-double DX (double (*func)(double, double, double), double x, double y, double PHI0) {
+
+double DX (double (*func)(double, double), double x, double y) {
   double h = 0.00001;
-  double fm2 = func(x - 2 * h, y, PHI0);
-  double fp2 = func(x + 2 * h, y, PHI0);
-  double fm1 = func(x - h, y, PHI0);
-  double fp1 = func(x + h, y, PHI0);
+  double fm2 = func(x - 2 * h, y);
+  double fp2 = func(x + 2 * h, y);
+  double fm1 = func(x - h, y);
+  double fp1 = func(x + h, y);
   return (fm2 - 8 * fm1 + 8 * fp1 - fp2) / (12 * h);
 }
-double DY (double (*func)(double, double, double), double x, double y, double PHI0) {
+double DY (double (*func)(double, double), double x, double y) {
   double h = 0.00001;
-  double fm2 = func(x, y - 2 * h, PHI0);
-  double fp2 = func(x, y + 2 * h, PHI0);
-  double fm1 = func(x, y - h, PHI0);
-  double fp1 = func(x, y + h, PHI0);
+  double fm2 = func(x, y - 2 * h);
+  double fp2 = func(x, y + 2 * h);
+  double fm1 = func(x, y - h);
+  double fp1 = func(x, y + h);
   return (fm2 - 8 * fm1 + 8 * fp1 - fp2) / (12 * h);
 }
 
-void findInitPoints (double PHI0) {
+/// @brief Function, which finds emission point sperical coordinates and put them into corresponding global variables 
+void setInitPoints () {
   double X = Globals::alpha, Y = Globals::PHI0;
   for(int i = 0; i < 50; i ++) {
-      double f1x = DX(func1, X, Y, Globals::PHI0);
-      double f2x = DX(func2, X, Y, Globals::PHI0);
-      double f1y = DY(func1, X, Y, Globals::PHI0);
-      double f2y = DY(func2, X, Y, Globals::PHI0);
-      double f1 = func1(X, Y, Globals::PHI0);
-      double f2 = func2(X, Y, Globals::PHI0);
+      double f1x = DX(func1, X, Y);
+      double f2x = DX(func2, X, Y);
+      double f1y = DY(func1, X, Y);
+      double f2y = DY(func2, X, Y);
+      double f1 = func1(X, Y);
+      double f2 = func2(X, Y);
       double dX = (f1y * f2 - f1 * f2y) / (f1x * f2y - f1y * f2x);
       double dY = (f1x * f2 - f1 * f2x) / (f1y * f2x - f2y * f1x);
       X += dX;

@@ -28,9 +28,6 @@ using namespace std;
 */
 #include "../lib/diffeqsolver.h"
 
-void displayVector (vector <double> a) {
-    cout << endl << a[0] << endl << a[1] << endl << a[2] << endl;
-}
 
 int main(int argc, char* argv[]) {
   initialize(argc, argv);
@@ -51,7 +48,7 @@ int main(int argc, char* argv[]) {
   for (double phi_t = phi_t_start; phi_t <= phi_t_end; phi_t += phi_t_step) { // Phase switch
     cout << "PHI: " << phi_t << endl;
     Globals::PHI0 = phi_t * constants::PI / 180.0;
-    findInitPoints (Globals::PHI0);
+    setInitPoints();
     // cout << r_perp(0) << " " << phi_pc(0) << endl;
     double x1, x2, dep_vars[2];
     // attempt to avoid initial osc. region

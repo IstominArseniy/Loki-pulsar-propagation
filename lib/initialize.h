@@ -19,7 +19,7 @@ namespace Globals {
   extern interpolator2D dencity_interpolation;
 }
 
-void findInitPoints (double PHI0);
+void setInitPoints ();
 
 void define_Globals();
 

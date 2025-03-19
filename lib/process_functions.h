@@ -4,7 +4,7 @@ using Eigen::Vector3d;
 
 
 Vector3d vB(double R);
-Vector3d vBsplit(double R);
+Vector3d Bfield(Vector3d vR, Vector3d m);
 
 double delta (double R);
 double BetaB (double R);

@@ -3,7 +3,6 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <Eigen/Dense>
 #include "read_write.h"
 #include "constants.h"
 #include "functions.h"
@@ -22,6 +21,7 @@ double sgn (double value) {
     return -1.0;
   }
 }
+
 
 Vector3d vMoment (double R) {
   /*
@@ -42,8 +42,6 @@ Vector3d vR (double R) {
   n0(0) = sin(Globals::theta_em) * cos(Globals::phi_em);
   n0(1) = sin(Globals::theta_em) * sin(Globals::phi_em);
   n0(2) = cos(Globals::theta_em);
-
-  Vector3d o(3); // unit vector in the direction to the observer
   return Globals::R_em * n0 + R * Globals::o;
 } 
 
@@ -54,49 +52,29 @@ double psi_m (double R) {
   return ANGLE(vR(R), vMoment(R));
 }
 
-Vector3d vBdipole (double R) {
-  /*
-  Dipolar part of magnetic field
-  */
-  Vector3d m;
-  Vector3d n;
-  m = vMoment (R);
-  n = vR(R).normalized();
-  return 3 * m.dot(n) * n - m;
+
+/// @param vR - radius vector to the point
+/// @param m - magnetic moment vector
+/// @return Magnetic field vector in arbitrary point in magnetosphere 
+Vector3d Bfield(Vector3d vR, Vector3d m){
+  double Rdist = vR.norm();
+  Vector3d n = vR.normalized();
+  Vector3d Bdipole = 3 * m.dot(n) * n - m; // Dipole component
+  Vector3d Bwind; //Wind component
+  Bwind(0) = Rdist/Globals::RLC * Globals::fr * n(0) - std::pow(Rdist/Globals::RLC, 2)* 
+  Globals::fphi * Globals::fr * (-n(1));
+  Bwind(1) = Rdist/Globals::RLC * Globals::fr * n(1) - std::pow(Rdist/Globals::RLC, 2)* 
+  Globals::fphi * Globals::fr * n(0);
+  Bwind(2) = Rdist/Globals::RLC * Globals::fr * n(2);
+  return Bdipole + Bwind;
 }
 
-Vector3d vBsplit (double R) {
-  /*
-  Split-monopole part of the magnetic field
-  */
-  double Rr = vR(R).norm();
-  double Rxy = sqrt(vR(R)(0) * vR(R)(0) + vR(R)(1) * vR(R)(1));
 
-  // double costh = SCALAR(NORMALIZE(vR(R)), NORMALIZE(Globals::vOmega));
-  double costh = vR(R).normalized().dot(Globals::vOmega.normalized());
-  double sinth = sqrt(1 - costh * costh);
-  double cosphi = vR(R)(0) / Rxy;
-  double sinphi = vR(R)(1) / Rxy;
-
-  double Br = (Globals::fr / (Rr * Rr * Globals::RLC)) * pow(Rr, 3); 
-  double Bphi = -(Globals::fphi * Globals::fr * sinth / (Rr * Globals::RLC * Globals::RLC)) * pow(Rr, 3); 
-
-  Vector3d vB;
-  vB(0) = Br * sinth * cosphi - Bphi * sinphi;
-  vB(1) = Br * sinth * sinphi + Bphi * cosphi;
-  vB(2) = Br * costh;
-  return vB;
-}
-
+/// @brief Magneic field on the ray
+/// @param R 
+/// @return B field vector
 Vector3d vB (double R) {
-  /*
-  Resultant magnetic field
-  */
-  if (Globals::fphi == 0 && Globals::fr == 0) {
-    return vBdipole(R);
-  } else {
-    return vBsplit(R) + vBdipole(R);
-  }
+  return Bfield(vR(R), vMoment(R));
 }
 
 Vector3d vb (double R) {
