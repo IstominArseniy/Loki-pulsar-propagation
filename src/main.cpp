@@ -10,6 +10,7 @@ mpirun --use-hwthread-cpus -np 12 ./bin/loki -i bin/loki.input -o bin/my_output
 #include <fstream>
 #include <sstream>
 #include <typeinfo>
+#include <boost/numeric/odeint.hpp>
 #include "mpi.h"
 
 #include <sys/types.h>
@@ -37,6 +38,7 @@ using namespace std;
 
 
 int main(int argc, char* argv[]) {
+  using namespace boost::numeric::odeint;
   initialize(argc, argv);
   //CREATE FOLDER FOR CALCULATION IF NOT EXIST-----------------------
   std::string global_data_path = Globals::out_path+"/"+Globals::RUN_ID+"_global_data";
@@ -81,16 +83,20 @@ int main(int argc, char* argv[]) {
     ofstream output(global_data_path + "/" + Globals::RUN_ID + "_" + to_string(Globals::PHI0 * 180 / constants::PI) + ".dat");
     setInitPoints();
     // cout << r_perp(0) << " " << phi_pc(0) << endl;
-    double x1, x2, dep_vars[2];
-    // attempt to avoid initial osc. region
+    double x1, x2;
+    // std::vector<double> dep_vars(2);
+    double dep_vars[2];
+    // Avoiding initial osc. region
+    // x1 = 10;
     x1 = find_initial_point(false);
-    // std::cout << x1 << std::endl;
-    // x1 = 100;
+    std::cout << x1 << std::endl;
     x2 = 1.5 * Globals::RESCAPE;
-    // x2 = Globals::RLC;
+
     // Initial values />
     dep_vars[0] = approximate_solution_theta0(x1, Globals::mode);
     dep_vars[1] = approximate_solution_theta1(x1, Globals::mode);
+    // dep_vars[0] = (BetaB(x1) + delta(x1));
+    // dep_vars[1] = 0.00;
     // </ Initial values
     double PA = dep_vars[0] * 180 / constants::PI;
     //double RM = integrate(RM_dencity, Globals::R_em, Globals::RLC);
@@ -103,6 +109,8 @@ int main(int argc, char* argv[]) {
 
     int nvar = 2, nok = 0, nbad = 0;
     double deps = 1e-6, h1 = 1.0e-3, hmin = 1.0e-15;
+    controlled_runge_kutta<runge_kutta_dopri5 < std::vector<double> > > addaptive_stepper;
+    // integrate_adaptive(addaptive_stepper, RHS_for_boost, dep_vars, x1, x2, h1);
     odeint(dep_vars, nvar, x1, x2, deps, h1, hmin, nok, nbad, RHS);
 
     VV = II * tanh(2.0 * dep_vars[1]);
