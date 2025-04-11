@@ -105,7 +105,9 @@ int main(int argc, char* argv[]) {
     //INTEGRATION----------------------------------------------------------------------------------------
     double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-3;
     auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >());
-    integrate_adaptive(addaptive_stepper, RHS_for_boost, dep_vars, x1, x2, h_init);
+    std::string path = Globals::out_path + "/" + Globals::RUN_ID + "_theta_data/" + Globals::RUN_ID + "_theta_"+ to_string(Globals::PHI0 * 180 / constants::PI) + ".dat";
+    ofstream plot(path);
+    integrate_adaptive(addaptive_stepper, RHS_for_boost, dep_vars, x1, x2, h_init, Observer(plot));
     //double RM = integrate(RM_dencity, Globals::R_em, Globals::RLC); // RM calculation
     //---------------------------------------------------------------------------------------------------
     //OUTPUTS--------------------------------------------------------------------------------------------
