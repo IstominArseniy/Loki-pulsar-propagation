@@ -1,4 +1,14 @@
 #pragma DIFFEQSOLVER
+#include<fstream>
+#include<vector>
+
+class Observer{
+private:
+    std::ofstream& obs_out;
+public:
+    Observer(std::ofstream&  out);
+    void operator () (const std::vector<double>& y, double x);
+};
 
 void rk4(double *y, double *dydx, int n, double x, double h, double *yout, void (*derivs)(double, double *, double *));
 void rkqc(
