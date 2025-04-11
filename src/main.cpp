@@ -2,6 +2,7 @@
 command to run this programm 
 mpirun --use-hwthread-cpus -np 12 ./bin/loki -i bin/loki.input -o bin/my_output
 */
+ 
 
 #include <iostream>
 #include <math.h>
@@ -18,8 +19,6 @@ mpirun --use-hwthread-cpus -np 12 ./bin/loki -i bin/loki.input -o bin/my_output
 #include <unistd.h>
 #include <math.h>
 #include <filesystem>
-namespace fs = std::filesystem;
-using namespace std;
 
 #include "../lib/constants.h"
 #include "../lib/read_write.h"
@@ -31,10 +30,10 @@ using namespace std;
 #include "../lib/integrator.h"
 #include "../lib/RHS.h"
 
-/*
-  Default libraries
-*/
 #include "../lib/diffeqsolver.h"
+
+namespace fs = std::filesystem;
+using namespace std;
 
 
 int main(int argc, char* argv[]) {
