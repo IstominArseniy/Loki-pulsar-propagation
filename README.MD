@@ -11,6 +11,11 @@ Theoretical basis for the program is given in the following papers <sup>[1](#myf
 * All the physical functions involved are in `process_functions.h` and the right-hand side of the ODE is written in `RHS.h`. `initialize.h` is to store some of the initialization routines used, such as finding the radiation point.
 * `constants.h` is to store all the necessary constants within the `constants::` namespace.
 
+### Requirements
+Current version requires the following open-source c++ libs:
+* `Eigen3` for vector calculations https://eigen.tuxfamily.org/index.php?title=Main_Page
+* `boost/numeric/odeint` for solving ODEs  https://www.boost.org/doc/libs/1_82_0/libs/numeric/odeint/doc/html/index.html
+
 ### Running
 * Compile with `make all` in the root directory, the executable is generated in the `bin/` directory.
 * The input parameters are passed with the `loki.input` file, from the same directory as the executable file.
