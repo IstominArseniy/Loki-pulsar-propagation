@@ -177,15 +177,18 @@ double phi_pc(double R){
 /// @param R 
 /// @return normalized plasma density
 double gFunc (double R) {
-  // TODO interpolation flag
-  double f = std::pow(std::sin(psi_m(R)), 2) * Globals::RLC / vR(R).norm();
-	double theta = ANGLE(vR(R), Globals::vOmega);
-	double dtheta = 5.0 * constants::PI / 180.0;
-	double gap = 1.0;
-	if (Globals::alpha_deg > 80)
-    gap = (1. - exp(-pow(constants::PI * 0.5 - theta, 2) / (2.0 * dtheta * dtheta)));
-	return (pow(f, 2.5) * exp(-f * f) / (pow(f, 2.5) + pow(Globals::f0, 2.5))) * gap;
-  // return Globals::dencity_interpolation.get_f(r_perp(R), phi_pc(R));
+  if(Globals::density_filename == "default"){
+    double f = std::pow(std::sin(psi_m(R)), 2) * Globals::RLC / vR(R).norm();
+    double theta = ANGLE(vR(R), Globals::vOmega);
+    double dtheta = 5.0 * constants::PI / 180.0;
+    double gap = 1.0;
+    if (Globals::alpha_deg > 80)
+      gap = (1. - exp(-pow(constants::PI * 0.5 - theta, 2) / (2.0 * dtheta * dtheta)));
+    return (pow(f, 2.5) * exp(-f * f) / (pow(f, 2.5) + pow(Globals::f0, 2.5))) * gap;
+  }
+  else{
+    return Globals::density_interpolation.get_f(r_perp(R), phi_pc(R));
+  }
 }
 
 
@@ -197,7 +200,7 @@ double Ne(double R) {
   return Globals::lambda * gFunc (R) * nGJ;
 }
 
-double RM_dencity(double R){
+double RM_density(double R){
     return 2.62e-17 * Ne(R) / Globals::lambda * (Globals::B0 / std::pow(vR(R).norm(), 3)) * std::cos(theta_kb(R));
 }
 
@@ -306,7 +309,7 @@ double find_initial_point(bool use_binary_search) {
   double freq0 = 0.1;
   if(use_binary_search){
     double n_iter=0;
-    if(std::fabs(Lambda_derivative(0) / std::pow(Lambda(0), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0)
+    if(std::fabs(Lambda_derivative(Globals::L_SHIFT) / std::pow(Lambda(Globals::L_SHIFT), 2) * 2 * constants::c / constants::R_star / Globals::omega) > freq0)
       return Globals::L_SHIFT; //shift to avoid zero kB angle
     double R_left = Globals::L_SHIFT, R_right = Globals::RLC / 10, R_cur; 
     R_cur = (R_left + R_right) / 2;
@@ -334,16 +337,22 @@ double find_initial_point(bool use_binary_search) {
 
 double approximate_solution_theta0(double R, int mode){
   double integral;
-  integral = integrate(Lambda, 0, R);
-  if (mode == 1)
-    return BetaB(R) + delta(R) - constants::c / constants::R_star / Globals::omega / Lambda(Globals::L_SHIFT) * (BetaB_derivative(Globals::L_SHIFT) + delta_derivative(Globals::L_SHIFT)) * sin(Globals::omega / constants::c * constants::R_star * integral);
+  integral = integrate(Lambda, Globals::L_SHIFT, R);
+  double add_term = 0;
+  if (gFunc(Globals::L_SHIFT) > 1e-8)
+    add_term = - constants::c / constants::R_star / Globals::omega / Lambda(Globals::L_SHIFT) * (BetaB_derivative(Globals::L_SHIFT) + delta_derivative(Globals::L_SHIFT)) * sin(Globals::omega / constants::c * constants::R_star * integral);
+  if (mode == 1){
+    return BetaB(R) + delta(R) + add_term;
+  }
   else
-    return constants::PI / 2 + BetaB(R) + delta(R) - constants::c / constants::R_star / Globals::omega / Lambda(Globals::L_SHIFT) * (BetaB_derivative(Globals::L_SHIFT) + delta_derivative(Globals::L_SHIFT)) * sin(Globals::omega / constants::c * constants::R_star * integral);
+    return constants::PI / 2 + BetaB(R) + delta(R) + add_term;
 }
 
 double approximate_solution_theta1(double R, int mode){
   double integral;
-  integral = integrate(Lambda, 0, R);
+  integral = integrate(Lambda, Globals::L_SHIFT, R);
+  if (gFunc(Globals::L_SHIFT) < 1e-8)
+    return 0;
   if (mode == 1)
     return -constants::c / constants::R_star / Globals::omega / Lambda(R) * (BetaB_derivative(R) + delta_derivative(R)) - 1 / Q(R) + 
   constants::c / constants::R_star / Globals::omega / Lambda(Globals::L_SHIFT) * (BetaB_derivative(Globals::L_SHIFT) + delta_derivative(Globals::L_SHIFT)) * cos(Globals::omega / constants::c * constants::R_star * integral);

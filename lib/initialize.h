@@ -15,8 +15,8 @@ namespace Globals {
         R_em, RLC, RESCAPE, ROMODE, L_SHIFT;
   extern Vector3d vOmega;
   extern Vector3d o;
-  extern std::string RUN_ID, input_name, out_path, dencity_filename;
-  extern interpolator2D dencity_interpolation;
+  extern std::string RUN_ID, input_name, out_path, density_filename;
+  extern interpolator2D density_interpolation;
 }
 
 void setInitPoints ();

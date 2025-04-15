@@ -87,11 +87,11 @@ int main(int argc, char* argv[]) {
     // Avoiding initial osc. region
     // x1 = 10;
     x1 = find_initial_point(false);
-    std::cout << x1 << std::endl;
     x2 = 1.5 * Globals::RESCAPE;
     // Initial values />
     dep_vars[0] = approximate_solution_theta0(x1, Globals::mode);
     dep_vars[1] = approximate_solution_theta1(x1, Globals::mode);
+    // std::cout << phi_t << " " << x1 << " " << dep_vars[0] << " " << dep_vars[1] << std::endl; 
     // </ Initial values
     double PA = dep_vars[0] * 180 / constants::PI;
     double tau = constants::PI * constants::R_star * integrate(dtau, x1, Globals::RLC) / (constants::c * Globals::omega);
@@ -102,6 +102,7 @@ int main(int argc, char* argv[]) {
     output << phi_t << " " << II0 << " " << VV << " " << PA << std::endl;
     //---------------------------------------------------------------------------------------------------
     //INTEGRATION----------------------------------------------------------------------------------------
+    // std::cout << phi_t << " " << r_perp(0) << " " <<  phi_pc(0) << " " << gFunc(0) <<  std::endl;
     double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-3;
     auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >());
     std::string path = Globals::out_path + "/" + Globals::RUN_ID + "_theta_data/" + Globals::RUN_ID + "_theta_"+ to_string(Globals::PHI0 * 180 / constants::PI) + ".dat";

@@ -87,9 +87,9 @@ double Globals::theta_em, Globals::phi_em,
       Globals::R_em, Globals::RLC, Globals::RESCAPE, Globals::ROMODE, Globals::L_SHIFT;
 Vector3d Globals::vOmega;
 Vector3d Globals::o;
-interpolator2D Globals::dencity_interpolation;
+interpolator2D Globals::density_interpolation;
 
-string Globals::RUN_ID, Globals::input_name, Globals::out_path, Globals::dencity_filename;
+string Globals::RUN_ID, Globals::input_name, Globals::out_path, Globals::density_filename;
 // < initialize Globals
 
 void define_Globals() {
@@ -108,8 +108,10 @@ void define_Globals() {
 
   Globals::alpha_deg = read_from_file(Globals::input_name, "alpha_deg");
   Globals::beta_deg = read_from_file(Globals::input_name, "beta_deg");
-  Globals::dencity_filename = read_from_file_str(Globals::input_name, "dencity_filename", "2D_dencity");
-  Globals::dencity_interpolation.init(Globals::dencity_filename);
+  Globals::density_filename = read_from_file_str(Globals::input_name, "density_filename", "default");
+  if(Globals::density_filename != "default"){
+    Globals::density_interpolation.init(Globals::density_filename);
+  }
   Globals::alpha = Globals::alpha_deg * constants::PI / 180.0; // Inclination angle in radians
   Globals::beta = Globals::beta_deg * constants::PI / 180.0; // Line of sight angle in radians;
   Globals::dzeta = Globals::alpha - Globals::beta; // Minimum angle between the rotation axis and the line of sight
