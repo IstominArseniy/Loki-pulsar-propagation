@@ -21,8 +21,10 @@ double r_perp(double R);
 double phi_pc(double R);
 double gFunc (double R);
 
+
 Vector3d vR (double R);
 Vector3d vMoment (double R);
+Vector3d vBetaR(double R);
 Vector3d vUdr (double R);
 double theta_kb (double R);
 

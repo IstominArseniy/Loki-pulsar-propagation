@@ -87,6 +87,7 @@ int main(int argc, char* argv[]) {
     // Avoiding initial osc. region
     // x1 = 10;
     x1 = find_initial_point(false);
+    x2 = std::min(1.5 * Globals::RESCAPE, Globals::RLC - 1.1 * Globals::R_em);
     x2 = 1.5 * Globals::RESCAPE;
     // Initial values />
     dep_vars[0] = approximate_solution_theta0(x1, Globals::mode);
@@ -94,7 +95,7 @@ int main(int argc, char* argv[]) {
     // std::cout << phi_t << " " << x1 << " " << dep_vars[0] << " " << dep_vars[1] << std::endl; 
     // </ Initial values
     double PA = dep_vars[0] * 180 / constants::PI;
-    double tau = constants::PI * constants::R_star * integrate(dtau, x1, Globals::RLC) / (constants::c * Globals::omega);
+    double tau = constants::PI * constants::R_star * integrate(dtau, x1, Globals::RLC - 1.1 * Globals::R_em) / (constants::c * Globals::omega);
     double II0 = std::pow(gFunc(0), 2);
     double II = II0 * exp (-tau);
     double PA0_rad = dep_vars[0];
@@ -107,6 +108,7 @@ int main(int argc, char* argv[]) {
     auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >());
     std::string path = Globals::out_path + "/" + Globals::RUN_ID + "_theta_data/" + Globals::RUN_ID + "_theta_"+ to_string(Globals::PHI0 * 180 / constants::PI) + ".dat";
     ofstream plot(path);
+
     integrate_adaptive(addaptive_stepper, RHS_for_boost, dep_vars, x1, x2, h_init, Observer(plot));
     //double RM = integrate(RM_dencity, Globals::R_em, Globals::RLC); // RM calculation
     //---------------------------------------------------------------------------------------------------
