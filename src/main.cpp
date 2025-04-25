@@ -108,8 +108,20 @@ int main(int argc, char* argv[]) {
     auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >());
     std::string path = Globals::out_path + "/" + Globals::RUN_ID + "_theta_data/" + Globals::RUN_ID + "_theta_"+ to_string(Globals::PHI0 * 180 / constants::PI) + ".dat";
     ofstream plot(path);
-
-    integrate_adaptive(addaptive_stepper, RHS_for_boost, dep_vars, x1, x2, h_init, Observer(plot));
+    auto ode_range = make_adaptive_time_range(addaptive_stepper, RHS_for_boost, dep_vars, x1, x2, h_init);
+    auto it=ode_range.first;
+    double last_step = x1;
+    double cr_step_len = h_init;
+    while(it != ode_range.second){
+      plot << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << constants::R_star * Globals::omega / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << std::endl;
+      if(stop_condition(it->second + 5.01 * cr_step_len)){
+        break;
+      }
+      last_step = it->second;
+      it++;
+      cr_step_len = it->second - last_step;
+    }
+    // integrate_adaptive(addaptive_stepper, RHS_for_boost, dep_vars, x1, x2, h_init, Observer(plot));
     //double RM = integrate(RM_dencity, Globals::R_em, Globals::RLC); // RM calculation
     //---------------------------------------------------------------------------------------------------
     //OUTPUTS--------------------------------------------------------------------------------------------

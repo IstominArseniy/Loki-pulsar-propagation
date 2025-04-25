@@ -26,6 +26,7 @@ Vector3d vR (double R);
 Vector3d vMoment (double R);
 Vector3d vBetaR(double R);
 Vector3d vUdr (double R);
+bool stop_condition(double R);
 double theta_kb (double R);
 
 double find_initial_point(bool use_binary_search=true);

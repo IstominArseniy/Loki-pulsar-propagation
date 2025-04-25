@@ -103,10 +103,26 @@ Vector3d vUdr (double R) {
   temp(0) = vBetaR(R).dot(vn);
   temp(1) = vBetaR(R).dot(vm);
   if (temp(0)*temp(0) + temp(1) * temp(1) >= 1.0) {
+    std::cout << R << std::endl;
     throw_error("ERROR: vUdr > 1.");
   }
   temp(2) = std::sqrt(1 - pow(temp(0), 2) - pow(temp(1), 2));
   return temp;
+}
+
+bool stop_condition(double R){
+  Vector3d vn;
+  Vector3d vm;
+  vn = (Globals::o - Globals::o.dot(vb(R)) * vb(R)).normalized();
+  vm = (vb(R).cross(vn)).normalized();
+
+  Vector3d temp;
+  temp(0) = vBetaR(R).dot(vn);
+  temp(1) = vBetaR(R).dot(vm);
+  if (temp(0)*temp(0) + temp(1) * temp(1) >= 1.0) {
+    return true;
+  }
+  return false;
 }
 
 /// @param R 
