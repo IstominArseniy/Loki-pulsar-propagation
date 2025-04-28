@@ -98,6 +98,7 @@ int main(int argc, char* argv[]) {
     double tau = constants::PI * constants::R_star * integrate(dtau, x1, Globals::RLC - 1.1 * Globals::R_em) / (constants::c * Globals::omega);
     double II0 = std::pow(gFunc(0), 2);
     double II = II0 * exp (-tau);
+    // double II = II0;
     double PA0_rad = dep_vars[0];
     double VV = II * tanh(2.0 * dep_vars[1]);
     output << phi_t << " " << II0 << " " << VV << " " << PA << std::endl;
@@ -111,13 +112,17 @@ int main(int argc, char* argv[]) {
     auto ode_range = make_adaptive_time_range(addaptive_stepper, RHS_for_boost, dep_vars, x1, x2, h_init);
     auto it=ode_range.first;
     double last_step = x1;
+    std::vector<double> dep_vars_prev_step(2);
     double cr_step_len = h_init;
     while(it != ode_range.second){
-      plot << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << constants::R_star * Globals::omega / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << std::endl;
-      if(stop_condition(it->second + 5.01 * cr_step_len)){
+      if(stop_condition(it->second)){
         break;
       }
+      plot << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << constants::R_star * Globals::omega / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << std::endl;
+      // std::cout << it->second << " " << it->second + 5.1 * cr_step_len << " " << stop_condition(it->second + 5.1 * cr_step_len) << std::endl;
       last_step = it->second;
+      dep_vars_prev_step[0] = it->first[0];
+      dep_vars_prev_step[1] = it->first[1];
       it++;
       cr_step_len = it->second - last_step;
     }
@@ -125,8 +130,8 @@ int main(int argc, char* argv[]) {
     //double RM = integrate(RM_dencity, Globals::R_em, Globals::RLC); // RM calculation
     //---------------------------------------------------------------------------------------------------
     //OUTPUTS--------------------------------------------------------------------------------------------
-    VV = II * tanh(2.0 * dep_vars[1]);
-    PA = dep_vars[0] * 180.0 / constants::PI;
+    VV = II * tanh(2.0 * dep_vars_prev_step[1]);
+    PA = dep_vars_prev_step[0] * 180.0 / constants::PI;
     // cout << "\tI: " << II << "\n\tV: " << VV << "\n\tPA: " << -PA << endl << endl;
     output << phi_t << " " << II << " " << VV << " " << PA << std::endl ;
     output << (dep_vars[0] - PA0_rad) / std::pow((constants::c / Globals::freqGHz / 1e9), 2) << std::endl;

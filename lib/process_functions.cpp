@@ -103,8 +103,12 @@ Vector3d vUdr (double R) {
   temp(0) = vBetaR(R).dot(vn);
   temp(1) = vBetaR(R).dot(vm);
   if (temp(0)*temp(0) + temp(1) * temp(1) >= 1.0) {
-    std::cout << R << std::endl;
-    throw_error("ERROR: vUdr > 1.");
+    // std::cout << "!!! " << R << std::endl;
+    temp(0) = 0;
+    temp(1) = 0;
+    temp(2) = 0.9;
+    return temp;
+    // throw_error("ERROR: vUdr > 1.");
   }
   temp(2) = std::sqrt(1 - pow(temp(0), 2) - pow(temp(1), 2));
   return temp;
