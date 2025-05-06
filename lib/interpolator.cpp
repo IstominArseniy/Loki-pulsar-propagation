@@ -65,6 +65,26 @@ void interpolator2D::init(std::string fname){
 	in.close();
 }
 
+void interpolator2D::init(std::string fname, double r0, double r1, double phi0, double phi1){
+	std::ifstream in (fname);
+	in >> Nrs >> Nphis;
+	rs.resize(Nrs);
+	phis.resize(Nphis);
+	fs.resize(Nrs, std::vector<double>(Nphis));
+	for(int i=0; i<Nrs; i++){
+		rs[i] = r0 + (r1 - r0) / Nrs * i;
+	}
+	for(int i=0; i<Nphis; i++){
+		phis[i] = phi0 + (phi1 - phi0) / Nphis * i;
+	}
+	for(int i=0; i<Nrs; i++){
+		for(int j=0; j<Nphis; j++){
+			in>>fs[i][j];
+		}
+	}
+	in.close();
+}
+
 double interpolator2D::get_f(double r, double phi){
 	return bilinear_interp(rs, phis, fs, r, phi);
 }

@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
     // </ Initial values
     double PA = dep_vars[0] * 180 / constants::PI;
     double tau = constants::PI * constants::R_star * integrate(dtau, x1, Globals::RLC - 1.1 * Globals::R_em) / (constants::c * Globals::omega);
-    double II0 = std::pow(gFunc(0), 2);
+    double II0 = std::pow(gFunc(0), 1);
     double II = II0 * exp (-tau);
     // double II = II0;
     double PA0_rad = dep_vars[0];

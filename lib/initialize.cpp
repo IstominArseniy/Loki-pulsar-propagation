@@ -110,7 +110,7 @@ void define_Globals() {
   Globals::beta_deg = read_from_file(Globals::input_name, "beta_deg");
   Globals::density_filename = read_from_file_str(Globals::input_name, "density_filename", "default");
   if(Globals::density_filename != "default"){
-    Globals::density_interpolation.init(Globals::density_filename);
+    Globals::density_interpolation.init(Globals::density_filename, 0, 1, 0, 2 * constants::PI);
   }
   Globals::alpha = Globals::alpha_deg * constants::PI / 180.0; // Inclination angle in radians
   Globals::beta = Globals::beta_deg * constants::PI / 180.0; // Line of sight angle in radians;

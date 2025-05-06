@@ -14,18 +14,6 @@ private:
 public:
         interpolator2D ();
         void init(std::string fname);
+        void init(std::string fname, double r0, double r1, double phi0, double phi1);
         double get_f(double r, double phi);
 };
-
-void rk4_adaptive_odeint(
-	double ystart[],
-	int nvar,
-	double x1,
-	double x2,
-	double eps,
-	double h1,
-	double hmin,
-	bool save_trajectory, std::vector<std::vector<double> >& trajectory,
-	std::function<void(double, double *, double *)> derivs,
-	std::function<bool(double, double *)> early_stop_condition
-	);
