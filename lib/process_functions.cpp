@@ -14,7 +14,7 @@ using Eigen::Vector3d;
 
 // most of functions should be local
 
-double sgn (double value) {
+double sgn (double value) { // TODO move to functions.cpp
   if (value >= 0.0) {
     return 1.0;
   } else {
@@ -199,6 +199,7 @@ double phi_pc(double R){
 double gFunc (double R) {
   if(Globals::density_filename == "default"){
     double f = std::pow(std::sin(psi_m(R)), 2) * Globals::RLC / vR(R).norm();
+    return 100 * std::pow(f, 1.5) * std::exp(-10 * f);
     double theta = ANGLE(vR(R), Globals::vOmega);
     double dtheta = 5.0 * constants::PI / 180.0;
     double gap = 1.0;

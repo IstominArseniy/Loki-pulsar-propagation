@@ -30,3 +30,9 @@
 
 # VSCode folder
 /.vscode/
+
+# virtual env
+/.venv
+
+# Denisty Data folder
+/Density_data/

@@ -24,7 +24,7 @@ double bilinear_interp(std::vector<double>& xs, std::vector<double>& ys, std::ve
 	y_ind1 = (y - y_start) / y_step;
 	y_ind2 = y_ind1 + 1;
 	if(x_ind2 >= xs.size() || x_ind1 < 0 || y_ind2 >= ys.size() || y_ind1 < 0){
-		return 0;
+		return 0.01;
 	}
 	x1 = xs[x_ind1];
 	x2 = xs[x_ind2];

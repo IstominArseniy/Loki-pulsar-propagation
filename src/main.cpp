@@ -37,12 +37,18 @@ using namespace std;
 
 
 int main(int argc, char* argv[]) {
+  bool CALC_POL = false;
   using namespace boost::numeric::odeint;
   initialize(argc, argv);
-  //CREATE FOLDER FOR CALCULATION IF NOT EXIST-----------------------
+  //CREATE FOLDERS FOR CALCULATION IF NOT EXIST-----------------------
   std::string global_data_path = Globals::out_path+"/"+Globals::RUN_ID+"_global_data";
   if (!fs::is_directory(global_data_path) || !fs::exists(global_data_path)) { // Check if folder exists
     fs::create_directory(global_data_path); // create folder
+  } 
+
+  std::string theta_data_path = Globals::out_path+"/"+Globals::RUN_ID+"_theta_data";
+  if (!fs::is_directory(theta_data_path) || !fs::exists(theta_data_path)) { // Check if folder exists
+    fs::create_directory(theta_data_path); // create folder
   } 
   //-----------------------------------------------------------------
 
@@ -87,21 +93,26 @@ int main(int argc, char* argv[]) {
     // Avoiding initial osc. region
     // x1 = 10;
     x1 = find_initial_point(false);
-    x2 = std::min(1.5 * Globals::RESCAPE, Globals::RLC - 1.1 * Globals::R_em);
-    x2 = 1.5 * Globals::RESCAPE;
+    // std::cout << x1 << std::endl;
+    // x2 = std::min(1.5 * Globals::RESCAPE, Globals::RLC - 1.1 * Globals::R_em);
+    x2 = 3 * Globals::RESCAPE;
     // Initial values />
     dep_vars[0] = approximate_solution_theta0(x1, Globals::mode);
     dep_vars[1] = approximate_solution_theta1(x1, Globals::mode);
     // std::cout << phi_t << " " << x1 << " " << dep_vars[0] << " " << dep_vars[1] << std::endl; 
     // </ Initial values
     double PA = dep_vars[0] * 180 / constants::PI;
-    double tau = constants::PI * constants::R_star * integrate(dtau, x1, Globals::RLC - 1.1 * Globals::R_em) / (constants::c * Globals::omega);
+    double tau = constants::PI * constants::R_star * integrate(dtau, 1, Globals::RLC - 1.1 * Globals::R_em) / (constants::c * Globals::omega);
     double II0 = std::pow(gFunc(0), 1);
-    double II = II0 * exp (-tau);
+    double II = II0 * std::exp(-tau);
     // double II = II0;
     double PA0_rad = dep_vars[0];
-    double VV = II * tanh(2.0 * dep_vars[1]);
+    double VV = II0 * tanh(2.0 * dep_vars[1]);
     output << phi_t << " " << II0 << " " << VV << " " << PA << std::endl;
+    if(CALC_POL == false){
+      output.close();
+      continue;
+    }
     //---------------------------------------------------------------------------------------------------
     //INTEGRATION----------------------------------------------------------------------------------------
     // std::cout << phi_t << " " << r_perp(0) << " " <<  phi_pc(0) << " " << gFunc(0) <<  std::endl;
@@ -118,7 +129,7 @@ int main(int argc, char* argv[]) {
       if(stop_condition(it->second)){
         break;
       }
-      plot << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << constants::R_star * Globals::omega / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << std::endl;
+      plot << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << constants::R_star * Globals::omega / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << ", " << gFunc(it->second) << std::endl;
       // std::cout << it->second << " " << it->second + 5.1 * cr_step_len << " " << stop_condition(it->second + 5.1 * cr_step_len) << std::endl;
       last_step = it->second;
       dep_vars_prev_step[0] = it->first[0];
@@ -136,6 +147,7 @@ int main(int argc, char* argv[]) {
     output << phi_t << " " << II << " " << VV << " " << PA << std::endl ;
     output << (dep_vars[0] - PA0_rad) / std::pow((constants::c / Globals::freqGHz / 1e9), 2) << std::endl;
     output << dep_vars[0] << std::endl;
+    output << tau << std::endl;
     output.close();
     //--------------------------------------------------------------------------------------------------
   }
@@ -153,10 +165,12 @@ int main(int argc, char* argv[]) {
         ifstream in(entry.path());
         double phase, I0, V0, PA0, I1, V1, PA1;
         in >> phase >> I0 >> V0 >> PA0;
-        in >> phase >> I1 >> V1 >> PA1;
+        if(CALC_POL == true)
+          in >> phase >> I1 >> V1 >> PA1;
         in.close();
         output0 << phase << " " << I0 << " " << V0 << " " << PA0 << std::endl;
-        output1 << phase << " " << I1 << " " << V1 << " " << PA1 << std::endl;
+        if(CALC_POL == true)
+          output1 << phase << " " << I1 << " " << V1 << " " << PA1 << std::endl;
     }
     output0.close();
     output1.close();
