@@ -13,3 +13,11 @@ double ANGLE (Vector3d vec1, Vector3d vec2) {
 double Arcsinh(double x) {
   return log(x + sqrt(pow(x, 2.0) + 1.0));
 }
+
+double sgn (double value) {
+  if (value >= 0.0) {
+    return 1.0;
+  } else {
+    return -1.0;
+  }
+}

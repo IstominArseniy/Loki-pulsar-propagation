@@ -9,18 +9,9 @@
 #include "process_functions.h"
 #include "initialize.h"
 #include "integrator.h" 
+#include "FixedHeightModelClass.h"
 using namespace std;
 using Eigen::Vector3d;
-
-// most of functions should be local
-
-double sgn (double value) { // TODO move to functions.cpp
-  if (value >= 0.0) {
-    return 1.0;
-  } else {
-    return -1.0;
-  }
-}
 
 
 Vector3d vMoment (double R) {

@@ -31,6 +31,9 @@ mpirun --use-hwthread-cpus -np 12 ./bin/loki -i bin/loki.input -o bin/my_output
 #include "../lib/RHS.h"
 
 #include "../lib/diffeqsolver.h"
+#include "../lib/CppModelClass.h"
+
+
 
 namespace fs = std::filesystem;
 using namespace std;
