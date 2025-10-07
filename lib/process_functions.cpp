@@ -311,7 +311,7 @@ double dtau (double R) {
   return std::pow(omegaP(R), 2) * fDist (std::fabs(omegaB(R)) / (omegaW(R) * gammaU(R)));
 }
 
-/// @brief This function find a distance from emission point where oscillations fade out but p.a. is still strictly
+/// @brief This function finds a distance from emission point where oscillations fade out but p.a. is still strictly
 /// following beta + delta. 
 /// This point is determined from the condition |Lambda_derivative / Lambda^2 * 2 * c / omega| ~ 1 
 /// @param use_binary_search - flag, which determines wither to use binary search or not. Binary search can fail when 

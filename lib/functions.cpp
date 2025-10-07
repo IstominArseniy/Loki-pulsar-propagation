@@ -1,6 +1,7 @@
 #include <vector>
 #include <math.h>
 #include <Eigen/Dense>
+#include <functional>
 #include "functions.h"
 using namespace std;
 
@@ -20,4 +21,9 @@ double sgn (double value) {
   } else {
     return -1.0;
   }
+}
+
+double get_derivative_along_the_ray(std::function<double(double)> func, double l, double dl)
+{
+  return (func(l + dl) - func(l)) / dl; // Very approximate, but high accuracy is not needed (probably better still to make at least 2nd order)
 }
