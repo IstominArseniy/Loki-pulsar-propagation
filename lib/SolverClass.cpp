@@ -4,21 +4,23 @@
 #include "functions.h"
 #include "integrator.h"
 #include "constants.h"
+
+using Eigen::Vector3d;
+using namespace boost::numeric::odeint;
+
 FixedHeightSolver::FixedHeightSolver(double phi, int mode, ObservedRadioPulsar &PSR, FixedHeightModel &model)
 {
     model_ = model
     PSR_ = PSR;
     phi_ = phi;
     mode_ = mode;
+    std::pair<double, double> emission_coords = find_emission_point();
+    theta_em_ = emission_coords[0];
+    phi_em_ = emission_coords[1];
 }
 
 std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> theta_initial, double l1, double l2)
 {
-  // std::vector<double> dep_vars(2);
-  // x1 = find_initial_point(false); // initial integration point, avoiding initial osc. region
-  // x2 = PSR_.RLC; // final integration point, probably REDO;
-  // dep_vars = find_approximate_KO_solution(x1); //initial values after oscillatory region
-
   std::vector<double> dep_vars = theta_initial;
   double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-3; // accuracy and initial step
   auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
@@ -106,6 +108,11 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
   }
 }
 
+double FixedHeightSolver::find_intensity()
+{
+    return gFunc(l)
+}
+
 // ------------------------------------------------------------"on ray" functions ----------------------------------------------------------
 Vector3d FixedHeightSolver::vMoment (double l) {
   /*
@@ -118,15 +125,20 @@ Vector3d FixedHeightSolver::vMoment (double l) {
   return mvec;
 }
 
+std::pair<double, double> FixedHeightSolver::find_emission_point()
+{
+    return std::pair<double, double>();
+}
+
 Vector3d FixedHeightSolver::vR (double l) {
   /*
   Propagation radius vector
   Here strightforward ray propagation is implemented (but more complex cases of refraction can be considere here too) 
   */
   Vector3d n0(3); // unit vector along the ray
-  n0(0) = std::sin(theta_em) * std::cos(phi_em); //TODO find theta_em and phi_em
-  n0(1) = std::sin(theta_em) * std::sin(phi_em);
-  n0(2) = std::cos(theta_em);
+  n0(0) = std::sin(theta_em_) * std::cos(phi_em_); 
+  n0(1) = std::sin(theta_em_) * std::sin(phi_em_);
+  n0(2) = std::cos(theta_em_);
   return Rem * n0 + l * PSR_.observer_vec;
 } 
 

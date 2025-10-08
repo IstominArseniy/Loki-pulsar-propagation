@@ -55,7 +55,7 @@ double DY (double (*func)(double, double), double x, double y) {
   return (fm2 - 8 * fm1 + 8 * fp1 - fp2) / (12 * h);
 }
 
-/// @brief Function, which finds emission point sperical coordinates and put them into corresponding global variables 
+/// @brief Function, which finds emission point spherical coordinates and put them into corresponding global variables 
 void setInitPoints () {
   double X = Globals::alpha, Y = Globals::PHI0;
   for(int i = 0; i < 50; i ++) {

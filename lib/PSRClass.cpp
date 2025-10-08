@@ -4,17 +4,17 @@ using Eigen::Vector3d;
 
 ObservedRadioPulsar::ObservedRadioPulsar(std::map<std::string, double> psr_dict)
 {
-    B12 = psr_dict['B12'];
-    freqGhz = psr_dict['freqGhz'];
+    B12 = psr_dict["B12"];
+    freqGhz = psr_dict["freqGhz"];
     omega_obs = 2 * constants::PI * freqGhz * 1e9;
-    Period = psr_dict['Period'];
+    Period = psr_dict["Period"];
     Omega = 2 * constants::PI / Period;
-    chi_deg = psr_dict['chi_deg'];
-    beta_deg = psr_dict['beta_deg'];
+    chi_deg = psr_dict["chi_deg"];
+    beta_deg = psr_dict["beta_deg"];
     chi = chi_deg * constants::PI / 180;
     beta = beta_deg * constants::PI / 180;
     dzeta = chi + beta;
-    Rs = psr_dict['Rs'];
+    Rs = psr_dict["Rs"];
     RLC = (constants::c / Omega) / Rs;
 
     Omega_vec << 0, 0, Omega;

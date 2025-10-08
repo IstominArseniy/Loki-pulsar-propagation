@@ -1,11 +1,15 @@
-#include <PSRClass.h>
-#include <FixedHeightModelClass.h>
+#include "PSRClass.h"
+#include "FixedHeightModelClass.h"
+
+using Eigen::Vector3d;
 
 class FixedHeightSolver{
     private:
     double phi_;
     double mode_;
     double PSR_;
+    double theta_em_;
+    double phi_em_;
     FixedHeightModel model_;
 
     public:
@@ -44,12 +48,20 @@ class FixedHeightSolver{
     /// Lambda is not monotonous
     /// @return point, where integration of Kravtsov-Orlov equations can be started
     double find_initial_point(bool use_binary_search);
+
+    /// @brief find emission intensity
+    /// @return emission intensity in arbitrary uits
+    double find_intensity();
     // -----------------------------------------------------------------"On ray" functions-------------------------------------------------
     private:
 
     /// @param l distance along the ray
     /// @return magnetic moment unit vector (Egien 3d Vector)
     Vector3d vMoment (double l);
+
+    /// @brief finds spherical angular coordinates of the emission point (on the distance Rem) using ...
+    /// @return pair theta_em, phi_em
+    std::pair<double, double> find_emission_point();
 
     /// @param l distance along the ray
     /// @return vector to the point on the ray as Eigen 3d Vector
