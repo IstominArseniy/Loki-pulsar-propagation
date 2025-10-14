@@ -1,7 +1,7 @@
 #include "integrator.h"
 //#include <math.h>
 
-double integrate (double (*func)(double), double a, double b) {
+double integrate (std::function<double(double)> func, double a, double b) {
 	double r = a, dr = (b - a) / 500.0;
 	double s = 0.0;
 	while (r < b - dr) {

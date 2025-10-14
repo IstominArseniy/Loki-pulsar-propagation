@@ -1,5 +1,9 @@
 #include "PSRClass.h"
 #include "FixedHeightModelClass.h"
+#include <Eigen/Dense>
+
+
+#pragma once
 
 using Eigen::Vector3d;
 
@@ -7,7 +11,7 @@ class FixedHeightSolver{
     private:
     double phi_;
     double mode_;
-    double PSR_;
+    ObservedRadioPulsar PSR_;
     double theta_em_;
     double phi_em_;
     FixedHeightModel model_;
@@ -52,6 +56,27 @@ class FixedHeightSolver{
     /// @brief find emission intensity
     /// @return emission intensity in arbitrary uits
     double find_intensity();
+
+
+    // --------------------------Main Kravtsov-Orlov equation functions------------------------------------
+
+    /// @brief additional phase parameter related to ExB drift 
+    /// @param l distance alnog the ray 
+    /// @return delta phase 
+    double delta (double l);
+
+    /// @brief polar angle of magnetic filed projected to the plane perpendicular to the ray
+    /// @param l distnace along the ray
+    /// @return BetaB angle in radians
+    double BetaB (double l);
+
+    /// @param l distance alnog the ray
+    /// @return Q parameter from Kravtsov-Orlov equations
+    double Q (double l);
+
+    /// @param l distance along the ray
+    /// @return Lambda parameter form Kravtsov-Orlov equations
+    double Lambda (double l);
     // -----------------------------------------------------------------"On ray" functions-------------------------------------------------
     private:
 
@@ -99,7 +124,7 @@ class FixedHeightSolver{
     /// @param l distance along the ray
     /// @return distance from the field line footpoint to the polar cap center
     /// @note Only for dipolar magnetic field!!!
-    double r_pc(double l);
+    double x_pc(double l);
 
     /// @param l distance along the ray
     /// @return polar cap angle cooridnate of the magnetic field line footpoint.
@@ -110,9 +135,7 @@ class FixedHeightSolver{
     /// @brief Plasma density transvers profile
     /// @param l distance along the ray
     /// @return normalized plasma density
-    double gFunc (double l) {
-        return model_.density_proifle(x_pc(l), phi_pc(l)); // TODO make 1D/2D differentiation (performace issue)!!!
-    }
+    double gFunc (double l);
 
     /// @param l  distance along the ray
     /// @return Plasma density in physical units (g/cm^3)
@@ -130,23 +153,27 @@ class FixedHeightSolver{
     /// @return Local plasma frequency (s^-1)
     double omegaP (double l);
 
-    // --------------------------Main Kravtsov-Orlov equation functions------------------------------------
+    /// @brief ...
+    /// @param l 
+    /// @return ...
+    bool stop_condition(double l);
 
-    /// @brief additional phase parameter related to ExB drift 
-    /// @param l distance alnog the ray 
-    /// @return delta phase 
-    double delta (double l);
+
 
     /// @brief polar angle of magnetic filed projected to the plane perpendicular to the ray
     /// @param l distnace along the ray
-    /// @return BetaB angle in radians
-    double BetaB (double l);
+    /// @return Derivative of BetaB angle in radians along the ray
+    double BetaB_derivative (double l);
 
     /// @param l distance alnog the ray
-    /// @return Q parameter from Kravtsov-Orlov equations
-    double Q (double l);
+    /// @return Derivative of Q parameter from Kravtsov-Orlov equations along the ray
+    double Q_derivative (double l);
 
     /// @param l distance along the ray
-    /// @return Lambda parameter form Kravtsov-Orlov equations
-    double Lambda (double l);
-}
+    /// @return Derivative of Lambda parameter form Kravtsov-Orlov equations along the ray
+    double Lambda_derivative (double l);
+
+    /// @param l distance along the ray
+    /// @return Derivative of delta parameter form Kravtsov-Orlov equations along the ray
+    double delta_derivative(double l);
+};

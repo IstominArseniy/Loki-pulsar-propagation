@@ -1,14 +1,16 @@
 #include "FixedHeightModelClass.h"
 #include "constants.h"
 
+FixedHeightModel::FixedHeightModel(){}
+
 FixedHeightModel::FixedHeightModel(std::map<std::string, double> model_dict, ObservedRadioPulsar PSR)
 {
-    fr = model_dict['fr'];
-    fphi = model_dict['fphi'];
-    Rem = model_dict['Rm'];
-    L_SHIFT = model_dict['L_SHIFT'];
-    lambda = model_dict['lambda']; // questionable
-    gamma0 = model_dict['gamma0']; // questionable
+    fr = model_dict["fr"];
+    fphi = model_dict["fphi"];
+    Rem = model_dict["Rem"];
+    L_SHIFT = model_dict["L_SHIFT"];
+    lambda = model_dict["lambda"]; // questionable
+    gamma0 = model_dict["gamma0"]; // questionable
     PSR_ = PSR;
 
 }
@@ -59,8 +61,8 @@ double FixedHeightModel::ImEps_type_avrg(double A)
     return gamma0;
 }
 
-double FixedHeightModel::Q_type_avrg()
+double FixedHeightModel::Q_type_avrg(double A)
 {
     // should be Lambda_type_avrg / ImEps_type_avrg, but now for test it ist just 1/gamma^3 (cold plasma)
-    return std::pow(1/gamma0, 3)
+    return std::pow(1/gamma0, 3);
 }

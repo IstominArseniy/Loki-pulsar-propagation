@@ -1,6 +1,9 @@
 #include "PSRClass.h"
+#include "constants.h"
 
 using Eigen::Vector3d;
+
+ObservedRadioPulsar::ObservedRadioPulsar(){}
 
 ObservedRadioPulsar::ObservedRadioPulsar(std::map<std::string, double> psr_dict)
 {

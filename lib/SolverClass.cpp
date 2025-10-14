@@ -10,13 +10,13 @@ using namespace boost::numeric::odeint;
 
 FixedHeightSolver::FixedHeightSolver(double phi, int mode, ObservedRadioPulsar &PSR, FixedHeightModel &model)
 {
-    model_ = model
+    model_ = model;
     PSR_ = PSR;
     phi_ = phi;
     mode_ = mode;
     std::pair<double, double> emission_coords = find_emission_point();
-    theta_em_ = emission_coords[0];
-    phi_em_ = emission_coords[1];
+    theta_em_ = emission_coords.first;
+    phi_em_ = emission_coords.second;
 }
 
 std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> theta_initial, double l1, double l2)
@@ -24,7 +24,7 @@ std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> th
   std::vector<double> dep_vars = theta_initial;
   double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-3; // accuracy and initial step
   auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
-  auto ode_range = make_adaptive_time_range(addaptive_stepper, RHS_for_boost, dep_vars, l1, l2, h_init); // make range for integration
+  auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const std::vector<double>& f, std::vector<double> &dydx, double l){this->RHS_for_boost(f, dydx, l);}, dep_vars, l1, l2, h_init); // make range for integration
   auto it=ode_range.first;
   while(it != ode_range.second){ // integration 
     if(stop_condition(it->second)){ // stop integration if Udr > c(?!)
@@ -37,8 +37,12 @@ std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> th
   return dep_vars;
 }
 
+bool FixedHeightSolver::stop_condition(double l){
+  return true;
+}
+
 void FixedHeightSolver::RHS_for_boost(const std::vector<double>& f, std::vector<double> &dydx, double l) {
-	double coeff = PSR_.R_star * model_.omega / (2.0 * constants::c);
+	double coeff = PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c);
 
 	double LL = Lambda (l);
 	double QQ = Q (l);
@@ -59,12 +63,12 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
 {
   std::vector<double> theta_final(2);
   double Lambda_integral;
-  Lambda_integral = integrate(Lambda, model_.L_SHIFT, l);
-  double coefficient = constants::c / constants::R_star / Globals::omega
-  double delta_theta = - coefficient / Lambda(model_.L_SHIFT) * (get_derivative_along_the_ray(BetaB, model_.L_SHIFT) + get_derivative_along_the_ray(delta, model_.L_SHIFT)) * std::sin(integral / coefficient);
-  double V = -coefficient / Lambda(l) * (get_derivative_along_the_ray(BetaB, l) + get_derivative_along_the_ray(delta, l)) - 1 / Q(l) + 
-  coefficient / Lambda(model_.L_SHIFT) * (get_derivative_along_the_ray(BetaB, model_.L_SHIFT) + get_derivative_along_the_ray(delta, model_.L_SHIFT)) * std::cos(integral / coefficient);
-  if (mode == 0){
+  Lambda_integral = integrate([this](double l){return this->Lambda(l);}, model_.L_SHIFT, l);
+  double coefficient = constants::c / PSR_.Rs / PSR_.omega_obs;
+  double delta_theta = - coefficient / Lambda(model_.L_SHIFT) * (BetaB_derivative(model_.L_SHIFT) + delta_derivative(model_.L_SHIFT)) * std::sin(Lambda_integral / coefficient);
+  double V = -coefficient / Lambda(l) * (BetaB_derivative(l) + delta_derivative(l)) - 1 / Q(l) + 
+  coefficient / Lambda(model_.L_SHIFT) * (BetaB_derivative(model_.L_SHIFT) + delta_derivative(model_.L_SHIFT)) * std::cos(Lambda_integral / coefficient);
+  if (mode_ == 0){
     theta_final[0] = constants::PI / 2 + BetaB(l) + delta(l) + delta_theta;
     theta_final[1] = V;
   }
@@ -72,7 +76,7 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
     theta_final[0] = BetaB(l) + delta(l) + delta_theta;
     theta_final[1] = -V;
   }
-  return std::vector<double>();
+  return theta_final;
 }
 
 
@@ -81,16 +85,16 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
   if(use_binary_search){ // binary search
     double n_iter=0;
 
-    if(std::abs(get_derivative_along_the_ray(Lambda, model_.L_SHIFT) / std::pow(Lambda(model_.L_SHIFT), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega) > freq0)
+    if(std::abs(Lambda_derivative(model_.L_SHIFT) / std::pow(Lambda(model_.L_SHIFT), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs) > freq0)
       return model_.L_SHIFT; //shift to avoid zero kB angle
 
     double l_left = model_.L_SHIFT, l_right = PSR_.RLC / 10, l_cur;   
     l_cur = (l_left + l_right) / 2;
 
-    while(std::abs(std::abs(get_derivative_along_the_ray(Lambda, l_cur) / std::pow(Lambda(l_cur), 2) * 2 * constants::c  / PSR_.Rs/ PSR_.omega)  - freq0) > 0.01 && n_iter < 30){
+    while(std::abs(std::abs(Lambda_derivative(l_cur) / std::pow(Lambda(l_cur), 2) * 2 * constants::c  / PSR_.Rs/ PSR_.omega_obs)  - freq0) > 0.01 && n_iter < 30){
       l_cur = (l_left + l_right) / 2;
       n_iter++;
-      if(std::abs(get_derivative_along_the_ray(Lambda, l_cur) / std::pow(Lambda(l_cur), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega) > freq0){
+      if(std::abs(Lambda_derivative(l_cur) / std::pow(Lambda(l_cur), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs) > freq0){
         l_right = l_cur;
       }
       else{
@@ -101,7 +105,7 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
   }
   else{ // linear search
     double cr_l = model_.L_SHIFT, step = 10;
-    while(std::abs(get_derivative_along_the_ray(Lambda, cr_l+step) / std::pow(Lambda(cr_l+step), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega) < freq0){
+    while(std::abs(Lambda_derivative(cr_l + step) / std::pow(Lambda(cr_l+step), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs) < freq0){
       cr_l += step;
     }
     return cr_l;
@@ -110,7 +114,7 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
 
 double FixedHeightSolver::find_intensity()
 {
-    return gFunc(l)
+    return gFunc(0);
 }
 
 // ------------------------------------------------------------"on ray" functions ----------------------------------------------------------
@@ -126,8 +130,33 @@ Vector3d FixedHeightSolver::vMoment (double l) {
 }
 
 std::pair<double, double> FixedHeightSolver::find_emission_point()
-{
-    return std::pair<double, double>();
+{ 
+  double theta_em = PSR_.chi;
+  double phi_em = phi_;
+  Vector3d vM = vMoment(0);
+  Vector3d vPoint;
+  auto func1 = [&](double theta, double phi){
+    vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
+    return (model_.Bfield(vPoint, vM).normalized()).cross(PSR_.observer_vec)(0);
+  };
+  auto func2 = [&](double theta, double phi){
+    vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
+    return (model_.Bfield(vPoint, vM).normalized()).cross(PSR_.observer_vec)(1);
+  };
+  for(int i = 0; i < 15; i ++) {
+      double f1x = DX(func1, theta_em, phi_em);
+      double f2x = DX(func2, theta_em, phi_em);
+      double f1y = DY(func1, theta_em, phi_em);
+      double f2y = DY(func2, theta_em, phi_em);
+      double f1 = func1(theta_em, phi_em);
+      double f2 = func2(theta_em, phi_em);
+      double dX = (f1y * f2 - f1 * f2y) / (f1x * f2y - f1y * f2x);
+      double dY = (f1x * f2 - f1 * f2x) / (f1y * f2x - f2y * f1x);
+      theta_em += dX;
+      phi_em += dY;
+  } 
+  std::pair<double, double> em_point = {theta_em, phi_em};
+  return em_point;
 }
 
 Vector3d FixedHeightSolver::vR (double l) {
@@ -139,7 +168,7 @@ Vector3d FixedHeightSolver::vR (double l) {
   n0(0) = std::sin(theta_em_) * std::cos(phi_em_); 
   n0(1) = std::sin(theta_em_) * std::sin(phi_em_);
   n0(2) = std::cos(theta_em_);
-  return Rem * n0 + l * PSR_.observer_vec;
+  return model_.Rem * n0 + l * PSR_.observer_vec;
 } 
 
 double FixedHeightSolver::psi_m (double l) {
@@ -159,7 +188,7 @@ double FixedHeightSolver::theta_kb (double l) {
 }
 
 Vector3d FixedHeightSolver::vBetaR (double l) {
-  return PSR_.Rs / constants::c * PSR_.Omega_vec.cross(vR(R)); 
+  return PSR_.Rs / constants::c * PSR_.Omega_vec.cross(vR(l)); 
 }
 
 Vector3d FixedHeightSolver::vUdr (double l) {  
@@ -169,8 +198,8 @@ Vector3d FixedHeightSolver::vUdr (double l) {
   vm = (vb(l).cross(vn)).normalized();
 
   Vector3d temp;
-  temp(0) = vBetaR(R).dot(vn);
-  temp(1) = vBetaR(R).dot(vm);
+  temp(0) = vBetaR(l).dot(vn);
+  temp(1) = vBetaR(l).dot(vm);
   if (temp(0)*temp(0) + temp(1) * temp(1) >= 1.0) {
     temp(0) = 0;
     temp(1) = 0;
@@ -188,7 +217,7 @@ double FixedHeightSolver::gammaU (double l) {
   return std::pow(1 - vx * vx - vy * vy, -0.5);
 }
 
-double FixedHeightSolver::r_pc(double l){
+double FixedHeightSolver::x_pc(double l){
   return std::pow(std::sin(psi_m(l)), 2) * PSR_.RLC / vR(l).norm();
 }
 
@@ -205,7 +234,7 @@ double FixedHeightSolver::phi_pc(double l){
 }
 
 double FixedHeightSolver::gFunc (double l) {
-    return model_.density_proifle(x_pc(l), phi_pc(l)); // TODO make 1D/2D differentiation (performace issue)!!!
+    return model_.density_profile(x_pc(l), phi_pc(l)); // TODO make 1D/2D differentiation (performace issue)!!!
 }
 
 double FixedHeightSolver::Ne(double l) {
@@ -215,7 +244,7 @@ double FixedHeightSolver::Ne(double l) {
 }
 
 double FixedHeightSolver::omegaB (double l) {
-  return -constants::e * vB(R).norm() * (PSR_.B12*1e12 / std::pow(vR(l).norm(), 3)) / (constants::me * constants::c);
+  return -constants::e * vB(l).norm() * (PSR_.B12*1e12 / std::pow(vR(l).norm(), 3)) / (constants::me * constants::c);
 }
 
 double FixedHeightSolver::omegaW (double l) {
@@ -223,7 +252,7 @@ double FixedHeightSolver::omegaW (double l) {
   double vz = vUdr(l)(2);
   double sinth = std::sin(theta_kb(l));
   double costh = std::cos(theta_kb(l));
-  return PSR_.omega * (1 - sinth * vx - costh * vz);
+  return PSR_.omega_obs * (1 - sinth * vx - costh * vz);
 }
 
 double FixedHeightSolver::omegaP (double l) {
@@ -257,7 +286,7 @@ double FixedHeightSolver::Q (double l) {
   double vz = vUdr(l)(2);
   double sinth = std::sin(theta_kb(l));
   double costh = std::cos(theta_kb(l));
-  return  model_.lambda * omegaB(l) * PSR_.omega * (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2)) * model_.Q_type_avrg()
+  return  model_.lambda * omegaB(l) * PSR_.omega_obs * (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2)) * model_.Q_type_avrg(std::pow(gammaU(l) * omegaW(l) / omegaB(l), 2))
    / (2 * std::pow(omegaW(l), 2) * (costh * (1 - vx * vx - vy * vy) - vz * (1.0 - sinth * vx))); // ONLY FOR ZERO TEMPERATURE !!! 
 }
 
@@ -266,8 +295,32 @@ double FixedHeightSolver::Lambda (double l) {
   double vy = vUdr(l)(1);
   double sinth = std::sin(theta_kb(l));
   double costh = std::cos(theta_kb(l));
-  double avrg = model_.Lamda_type_avrg(std::pow(gammaU(l) * omegaW(l) / omegaB(l), 2));
-  return (-1.0 / 2.0) * std::pow(omegaP(R) * gammaU(R) / omegaW(R), 2) * avrg *
+  double avrg = model_.Lambda_type_avrg(std::pow(gammaU(l) * omegaW(l) / omegaB(l), 2));
+  return (-1.0 / 2.0) * std::pow(omegaP(l) * gammaU(l) / omegaW(l), 2) * avrg *
    (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2));
+}
+
+double FixedHeightSolver::BetaB_derivative(double l)
+{
+  double dl = 1;
+  return (BetaB(l + dl) - BetaB(l)) / dl;
+}
+
+double FixedHeightSolver::Q_derivative(double l)
+{
+  double dl = 1;
+  return (Q(l + dl) - Q(l)) / dl;
+}
+
+double FixedHeightSolver::Lambda_derivative(double l)
+{
+  double dl = 1;
+  return (Lambda(l + dl) - Lambda(l)) / dl;
+}
+
+double FixedHeightSolver::delta_derivative(double l)
+{
+  double dl = 1;
+  return (delta(l + dl) - delta(l)) / dl;
 }
 

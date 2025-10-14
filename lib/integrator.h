@@ -1,3 +1,6 @@
-#pragma INTEGRATOR
+#pragma once
 
-double integrate (double (*func)(double), double a, double b);
+#include <functional>
+
+// double integrate (double (*func)(double), double a, double b);
+double integrate (std::function<double(double)> func, double a, double b);
