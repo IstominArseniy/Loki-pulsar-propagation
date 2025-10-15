@@ -17,9 +17,9 @@ class FixedHeightSolver{
     FixedHeightModel model_;
 
     public:
-    FixedHeightSolver(double phi, int mode, ObservedRadioPulsar &PSR, FixedHeightModel &model);
+    FixedHeightSolver(double phi_deg, int mode, ObservedRadioPulsar &PSR, FixedHeightModel &model);
     /// @brief solve Kravtsov-Orlov equations
-    /// @param phi pulsar phase
+    /// @param phi pulsar phase in degrees
     /// @param theta_inital inital values for comlex polarisation angle (as length 2 vector)
     /// @param mode emission mode (1 - Omode, 0 - Xmode)
     /// @return theta_final -  final complex polarisation angle (as length 2 vector)

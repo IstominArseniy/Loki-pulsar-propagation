@@ -8,15 +8,15 @@ ObservedRadioPulsar::ObservedRadioPulsar(){}
 ObservedRadioPulsar::ObservedRadioPulsar(std::map<std::string, double> psr_dict)
 {
     B12 = psr_dict["B12"];
-    freqGhz = psr_dict["freqGhz"];
-    omega_obs = 2 * constants::PI * freqGhz * 1e9;
+    freqGHz = psr_dict["freqGHz"];
+    omega_obs = 2 * constants::PI * freqGHz * 1e9;
     Period = psr_dict["Period"];
     Omega = 2 * constants::PI / Period;
     chi_deg = psr_dict["chi_deg"];
     beta_deg = psr_dict["beta_deg"];
     chi = chi_deg * constants::PI / 180;
     beta = beta_deg * constants::PI / 180;
-    dzeta = chi + beta;
+    dzeta = chi - beta;
     Rs = psr_dict["Rs"];
     RLC = (constants::c / Omega) / Rs;
 

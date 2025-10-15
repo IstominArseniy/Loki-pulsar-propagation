@@ -10,7 +10,7 @@ class ObservedRadioPulsar{
     ObservedRadioPulsar();
     ObservedRadioPulsar(std::map<std::string, double> psr_dict); // constructor from dictionary
     double B12;
-    double freqGhz;
+    double freqGHz;
     double omega_obs;
     double Period;
     double Omega;

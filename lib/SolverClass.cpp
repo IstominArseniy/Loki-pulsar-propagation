@@ -8,15 +8,16 @@
 using Eigen::Vector3d;
 using namespace boost::numeric::odeint;
 
-FixedHeightSolver::FixedHeightSolver(double phi, int mode, ObservedRadioPulsar &PSR, FixedHeightModel &model)
+FixedHeightSolver::FixedHeightSolver(double phi_deg, int mode, ObservedRadioPulsar &PSR, FixedHeightModel &model)
 {
     model_ = model;
     PSR_ = PSR;
-    phi_ = phi;
+    phi_ = phi_deg * constants::PI / 180;
     mode_ = mode;
     std::pair<double, double> emission_coords = find_emission_point();
     theta_em_ = emission_coords.first;
     phi_em_ = emission_coords.second;
+
 }
 
 std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> theta_initial, double l1, double l2)
@@ -134,14 +135,15 @@ std::pair<double, double> FixedHeightSolver::find_emission_point()
   double theta_em = PSR_.chi;
   double phi_em = phi_;
   Vector3d vM = vMoment(0);
-  Vector3d vPoint;
   auto func1 = [&](double theta, double phi){
+    Vector3d vPoint;
     vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
-    return (model_.Bfield(vPoint, vM).normalized()).cross(PSR_.observer_vec)(0);
+    return (model_.Bfield(vPoint, vM)).cross(PSR_.observer_vec)(0);
   };
   auto func2 = [&](double theta, double phi){
+    Vector3d vPoint;
     vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
-    return (model_.Bfield(vPoint, vM).normalized()).cross(PSR_.observer_vec)(1);
+    return (model_.Bfield(vPoint, vM)).cross(PSR_.observer_vec)(1);
   };
   for(int i = 0; i < 15; i ++) {
       double f1x = DX(func1, theta_em, phi_em);
@@ -154,7 +156,7 @@ std::pair<double, double> FixedHeightSolver::find_emission_point()
       double dY = (f1x * f2 - f1 * f2x) / (f1y * f2x - f2y * f1x);
       theta_em += dX;
       phi_em += dY;
-  } 
+  }
   std::pair<double, double> em_point = {theta_em, phi_em};
   return em_point;
 }
@@ -218,7 +220,7 @@ double FixedHeightSolver::gammaU (double l) {
 }
 
 double FixedHeightSolver::x_pc(double l){
-  return std::pow(std::sin(psi_m(l)), 2) * PSR_.RLC / vR(l).norm();
+  return std::sin(psi_m(l)) * std::sqrt(PSR_.RLC / vR(l).norm());
 }
 
 double FixedHeightSolver::phi_pc(double l){

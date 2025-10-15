@@ -11,7 +11,7 @@
 
 int main(int argc, char* argv[]) {
     std::map<std::string, double> psr_dict{
-        {"B12", 1}, {"Period", 1}, {"freqGhz", 1}, {"chi_deg", 45}, {"beta_dega", 2}, {"Rs", 1.2e6}
+        {"B12", 1}, {"Period", 1}, {"freqGHz", 1}, {"chi_deg", 45}, {"beta_deg", 2}, {"Rs", 1.2e6}
     };
     ObservedRadioPulsar PSR(psr_dict);
     std::map<std::string, double> model_dict{
@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     };
     FixedHeightModel model(model_dict, PSR);
     CppInterface interface (psr_dict, model_dict);
-    std::map<std::string, double> answer = interface.find_ILVPA(5, 0);
-    std::cout << answer["I"];
+    std::map<std::string, double> answer = interface.find_ILVPA(-5, 0);
+    std::cout << answer["V"] << std::endl;
     return 0;
 }

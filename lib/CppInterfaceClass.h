@@ -19,6 +19,7 @@ class CppInterface{
     CppInterface (std::map<std::string, double> psr_dict, std::map<std::string, double> param_dict); // Consturctor - will be exposed to python
     // CppInterface (ObservedRadioPulsar Pulsar, ...); // Consturctor from PSR class
     std::map<std::string, double> find_ILVPA(double phi, int mode); // will be exposed to Python
+    double get_R_escape();
 };
 
 
