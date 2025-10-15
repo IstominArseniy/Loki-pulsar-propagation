@@ -25,7 +25,6 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode)
     double l2 = 3 * get_R_escape();
     std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);
     std::vector<double> theta_final = solver.solve_KO_equations(theta_init, l1, l2);
-    std::cout << theta_final[0] << " " << theta_final[1] << std::endl;
     double I = solver.find_intensity();
     double V = I * std::tanh(2.0 * theta_final[1]);
     double PA = theta_final[0] * 180.0 / constants::PI;

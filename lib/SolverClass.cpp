@@ -39,7 +39,7 @@ std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> th
 }
 
 bool FixedHeightSolver::stop_condition(double l){
-  return true;
+  return false;
 }
 
 void FixedHeightSolver::RHS_for_boost(const std::vector<double>& f, std::vector<double> &dydx, double l) {
@@ -71,11 +71,11 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
   coefficient / Lambda(model_.L_SHIFT) * (BetaB_derivative(model_.L_SHIFT) + delta_derivative(model_.L_SHIFT)) * std::cos(Lambda_integral / coefficient);
   if (mode_ == 0){
     theta_final[0] = constants::PI / 2 + BetaB(l) + delta(l) + delta_theta;
-    theta_final[1] = V;
+    theta_final[1] = -V;
   }
   else{
     theta_final[0] = BetaB(l) + delta(l) + delta_theta;
-    theta_final[1] = -V;
+    theta_final[1] = V;
   }
   return theta_final;
 }

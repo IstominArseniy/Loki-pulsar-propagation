@@ -20,6 +20,5 @@ int main(int argc, char* argv[]) {
     FixedHeightModel model(model_dict, PSR);
     CppInterface interface (psr_dict, model_dict);
     std::map<std::string, double> answer = interface.find_ILVPA(-5, 0);
-    std::cout << answer["V"] << std::endl;
     return 0;
 }
