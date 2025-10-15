@@ -326,3 +326,13 @@ double FixedHeightSolver::delta_derivative(double l)
   return (delta(l + dl) - delta(l)) / dl;
 }
 
+// -----------------------Cyclotron Absorption------------------------
+
+double FixedHeightSolver::dtau (double l) {
+  double coef = constants::PI * PSR_.Rs / (constants::c * PSR_.omega_obs);
+  return coef * std::pow(omegaP(l), 2) * model_.fDist(std::abs(omegaB(l)) / (omegaW(l) * gammaU(l)));
+}
+
+double FixedHeightSolver::get_tau(){
+  return integrate([this](double l){return this->dtau(l);}, 1, 0.95 * PSR_.RLC);
+}

@@ -29,7 +29,8 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode)
     double V = I * std::tanh(2.0 * theta_final[1]);
     double PA = theta_final[0] * 180.0 / constants::PI;
     std::map<std::string, double> result;
-    result["I"] = I;
+    double tau = solver.get_tau();
+    result["I"] = I * std::exp(-tau);
     result["L"] = std::sqrt(I*I - V*V);
     result["V"] = V;
     result["PA"] = PA;

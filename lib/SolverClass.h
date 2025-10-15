@@ -57,6 +57,9 @@ class FixedHeightSolver{
     /// @return emission intensity in arbitrary uits
     double find_intensity();
 
+    /// @return tau - optical thickness (I = I0 * e^(-tau))
+    double get_tau();
+
 
     // --------------------------Main Kravtsov-Orlov equation functions------------------------------------
 
@@ -176,4 +179,11 @@ class FixedHeightSolver{
     /// @param l distance along the ray
     /// @return Derivative of delta parameter form Kravtsov-Orlov equations along the ray
     double delta_derivative(double l);
+
+    // -----------------------Cyclotron Absorption------------------------
+
+    /// @param l - distance along the ray
+    /// @return dtau - differential optical thickness (I = I0 * e^(-tau), tau = integral dtau)
+    double dtau (double l);
+
 };
