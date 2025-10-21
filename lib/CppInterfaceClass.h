@@ -20,6 +20,7 @@ class CppInterface{
     // CppInterface (ObservedRadioPulsar Pulsar, ...); // Consturctor from PSR class
     std::map<std::string, double> find_ILVPA(double phi, int mode); // will be exposed to Python
     double get_R_escape();
+    std::vector<std::map<std::string, double> > calculate_profile(double phi1, double phi2, double phi_step, int mode, bool use_multiprocessing=true, double n_threads=12);
 };
 
 
