@@ -5,7 +5,7 @@ LIBDIR=lib
 SRCDIR=src
 BINDINGDIR=python_bindings
 SOURCES=$(SRCDIR)/main.cpp 
-LIBSOURCES=$(LIBDIR)/CppInterfaceClass.cpp $(LIBDIR)/SolverClass.cpp $(LIBDIR)/PSRClass.cpp $(LIBDIR)/FixedHeightModelClass.cpp $(LIBDIR)/constants.cpp $(LIBDIR)/functions.cpp $(LIBDIR)/integrator.cpp
+LIBSOURCES=$(LIBDIR)/CppInterfaceClass.cpp $(LIBDIR)/SolverClass.cpp $(LIBDIR)/PSRClass.cpp $(LIBDIR)/FixedHeightModelClass.cpp $(LIBDIR)/constants.cpp $(LIBDIR)/functions.cpp $(LIBDIR)/integrator.cpp $(LIBDIR)/read_write.cpp
 BINDINGSOURCES=$(BINDINGDIR)/interface_class_binding.cpp 
 LIBOBJECTS=$(LIBSOURCES:$(LIBDIR)/%.cpp=$(OBJDIR)/%.o)
 SRCOBJECTS=$(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)

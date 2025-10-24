@@ -8,10 +8,12 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
-using namespace std;
-
-#include "constants.h"
+#include <filesystem>
 #include "read_write.h"
+
+using namespace std;
+namespace fs = std::filesystem;
+
 
 void throw_error(const string msg) {
   cout << msg << endl;
@@ -93,7 +95,13 @@ string read_from_file_str (string input_name, const string param, const string d
   return def_val;
 }
 
-void read_in_out(string &in, string &out, int argc, char* argv[]) {
+void make_dir(std::string dir_name) {
+  if (!fs::is_directory(dir_name) || !fs::exists(dir_name)) { // Check if folder exists
+    fs::create_directory(dir_name); // create folder
+  } 
+}
+
+void read_in_out(std::string &in, std::string &out, int argc, char* argv[]) {
   bool found_input = false, found_output = false;
   for (int i=0; i<argc; ++i) {
 		if (typeid(argv[i]) == typeid(char*)) {
