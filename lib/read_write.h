@@ -10,4 +10,3 @@ void make_dir(std::string dir_name);
 
 void read_in_out(string &in, string &out, int argc, char* argv[]);
 
-pair<double, double> find_thread_phases(double phi_start_global, double phi_end_global, double phi_step, int size, int rank);

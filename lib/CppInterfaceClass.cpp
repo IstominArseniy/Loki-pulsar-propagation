@@ -82,6 +82,34 @@ std::vector<std::map<std::string, double> > CppInterface::calculate_profile(doub
     return profile;
 }
 
+std::vector<double> CppInterface::vectorize_data(std::vector<std::map<std::string, double> > data)
+{
+    int N_counts = data.size();
+    std::vector<double> vectorized_data(N_counts * 5);
+    for(int i=0; i<N_counts; i++){
+        vectorized_data[i*5] = data[i]["phase"];
+        vectorized_data[i*5+1] = data[i]["I"];
+        vectorized_data[i*5+2] = data[i]["L"];
+        vectorized_data[i*5+3] = data[i]["V"];
+        vectorized_data[i*5+4] = data[i]["PA"];
+    }
+    return vectorized_data;
+}
+
+std::vector<std::map<std::string, double> > CppInterface::restore_data(std::vector<double> vectorized_data)
+{   
+    int N_counts = vectorized_data.size() / 5;
+    std::vector<std::map<std::string, double> > restored_data(N_counts);
+    for(int i=0; i<N_counts; i++){
+        restored_data[i]["phase"] = vectorized_data[i*5];
+        restored_data[i]["I"] = vectorized_data[i*5+1];
+        restored_data[i]["L"] = vectorized_data[i*5+2];
+        restored_data[i]["V"] = vectorized_data[i*5+3];
+        restored_data[i]["PA"] = vectorized_data[i*5+4];
+    }
+    return restored_data;
+}
+
 double CppInterface::get_R_escape()
 {
     return 1.0e3 * std::pow(model_.lambda / 1.0e4, 1.0/3.0) * std::pow(model_.gamma0 / 100.0, -6.0/5.0) * std::pow(PSR_.B12, 2.0/5.0) * std::pow(PSR_.freqGHz, -2.0/5.0) * std::pow(PSR_.Period, -1.0/5.0);
