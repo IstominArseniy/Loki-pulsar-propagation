@@ -115,3 +115,8 @@ double CppInterface::get_R_escape()
     return 1.0e3 * std::pow(model_.lambda / 1.0e4, 1.0/3.0) * std::pow(model_.gamma0 / 100.0, -6.0/5.0) * std::pow(PSR_.B12, 2.0/5.0) * std::pow(PSR_.freqGHz, -2.0/5.0) * std::pow(PSR_.Period, -1.0/5.0);
 
 }
+
+double CppInterface::get_RLC()
+{
+    return PSR_.RLC;
+}

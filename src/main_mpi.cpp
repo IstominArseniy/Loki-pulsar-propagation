@@ -48,24 +48,31 @@ int main(int argc, char* argv[]) {
     }
     if (rank == 0){
         std::cout << "Calculation started with " << size << " processes." << std::endl;
+        std::cout << "R_esc = " << calculation_interface.get_R_escape() << std::endl;
+        std::cout << "R_LC = " << calculation_interface.get_RLC() << std::endl;
+        if (emission_mode == 0){
+            std::cout << "Emission mode = X " << std::endl;
+        }
+        else{
+            std::cout << "Emission mode = O" << std::endl;
+        }
     }
     //split computation domain
     auto phases = split_phases(phi_start_global, phi_end_global, phi_step, size, rank);
     // computation of the profile
     auto result = calculation_interface.calculate_profile(phases.first, phases.second, phi_step, emission_mode, false);
     //wrting output data to file
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0){ // should be done only by one thread
-        // std::vector<std::map<std::string, double> > aggregated_result;
-        std::ofstream output(output_path+"/" +"output.dat");
-        for(auto& elem : result){
+    MPI_Barrier(MPI_COMM_WORLD); // wait untill all processes have finished
+    if(rank == 0){ // recieve data from all processes
+        std::ofstream output(output_path+"/" +"output.dat"); // output file
+        for(auto& elem : result){ // output from rank 0 process
             output << elem["phase"] << " " << elem["I"] << " " << elem["V"] << " " << elem["PA"] << std::endl;
         }
         for(int rank_id=1; rank_id<size; rank_id++){
             int N_counts;
-            MPI_Recv(&N_counts, 1, MPI_INT, rank_id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&N_counts, 1, MPI_INT, rank_id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); // recieve number of phase counts
             std::vector<double> vectorized_data(N_counts*5);
-            MPI_Recv(vectorized_data.data(), N_counts*5, MPI_DOUBLE, rank_id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(vectorized_data.data(), N_counts*5, MPI_DOUBLE, rank_id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); // recieve data
             auto recived_result = CppInterface::restore_data(vectorized_data);
             for(auto& elem : recived_result){
                 output << elem["phase"] << " " << elem["I"] << " " << elem["V"] << " " << elem["PA"] << std::endl;
@@ -73,11 +80,11 @@ int main(int argc, char* argv[]) {
         }
         output.close();
     }
-    else{
+    else{ // send data to proecss with rank 0
         int N_counts = result.size();
-        MPI_Ssend(&N_counts, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+        MPI_Ssend(&N_counts, 1, MPI_INT, 0, 0, MPI_COMM_WORLD); // send number of phase counts
         auto vectorized_data = CppInterface::vectorize_data(result);
-        MPI_Ssend(vectorized_data.data(), N_counts*5, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+        MPI_Ssend(vectorized_data.data(), N_counts*5, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD); // send data
     }
     MPI_Finalize();
     return 0;

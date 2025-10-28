@@ -67,15 +67,15 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
   Lambda_integral = integrate([this](double l){return this->Lambda(l);}, model_.L_SHIFT, l);
   double coefficient = constants::c / PSR_.Rs / PSR_.omega_obs;
   double delta_theta = - coefficient / Lambda(model_.L_SHIFT) * (BetaB_derivative(model_.L_SHIFT) + delta_derivative(model_.L_SHIFT)) * std::sin(Lambda_integral / coefficient);
-  double V = -coefficient / Lambda(l) * (BetaB_derivative(l) + delta_derivative(l)) - 1 / Q(l) + 
+  double theta2 = -coefficient / Lambda(l) * (BetaB_derivative(l) + delta_derivative(l)) - 1 / 2 / Q(l) + 
   coefficient / Lambda(model_.L_SHIFT) * (BetaB_derivative(model_.L_SHIFT) + delta_derivative(model_.L_SHIFT)) * std::cos(Lambda_integral / coefficient);
   if (mode_ == 0){
     theta_final[0] = constants::PI / 2 + BetaB(l) + delta(l) + delta_theta;
-    theta_final[1] = -V;
+    theta_final[1] = -theta2;
   }
   else{
     theta_final[0] = BetaB(l) + delta(l) + delta_theta;
-    theta_final[1] = V;
+    theta_final[1] = theta2;
   }
   return theta_final;
 }
