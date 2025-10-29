@@ -11,18 +11,22 @@
 
 using Eigen::Vector3d;
 
-CppInterface::CppInterface(){}
+CppInterface::CppInterface(std::string log_path){
+    log_path_ = log_path;
+}
 
-CppInterface::CppInterface(std::map<std::string, double> psr_dict, std::map<std::string, double> param_dict)
+CppInterface::CppInterface(std::map<std::string, double> psr_dict, std::map<std::string, double> param_dict, std::string log_path)
 { // Constructor form dict
     PSR_ = ObservedRadioPulsar(psr_dict);
     model_ = FixedHeightModel(param_dict, PSR_);
+    log_path_ = log_path;
 }
 
-CppInterface::CppInterface(ObservedRadioPulsar PSR, std::map<std::string, double> param_dict)
+CppInterface::CppInterface(ObservedRadioPulsar PSR, std::map<std::string, double> param_dict, std::string log_path)
 {
     PSR_ = PSR;
     model_ = FixedHeightModel(param_dict, PSR_);
+    log_path_ = log_path;
 }
 
 void CppInterface::init_from_file(std::string filename)
@@ -45,13 +49,14 @@ void CppInterface::init_from_file(std::string filename)
     model_ = FixedHeightModel(model_dict, PSR_);
 }
 
-std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode)
+std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, bool full_output)
 {
     FixedHeightSolver solver(phi, mode, PSR_, model_);
     double l1 = solver.find_initial_point(false);
-    double l2 = 3 * get_R_escape();
+    double l2 = 1.5 * get_R_escape();
+    // double l2 = l1 * 1.01;
     std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);
-    std::vector<double> theta_final = solver.solve_KO_equations(theta_init, l1, l2);
+    std::vector<double> theta_final = solver.solve_KO_equations(theta_init, l1, l2, log_path_);
     double I = solver.find_intensity();
     double tau = solver.get_tau();
     I *= std::exp(-tau);

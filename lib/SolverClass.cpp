@@ -5,6 +5,8 @@
 #include "integrator.h"
 #include "constants.h"
 
+#include <fstream>
+
 using Eigen::Vector3d;
 using namespace boost::numeric::odeint;
 
@@ -20,23 +22,34 @@ FixedHeightSolver::FixedHeightSolver(double phi_deg, int mode, ObservedRadioPuls
 
 }
 
-std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> theta_initial, double l1, double l2)
+std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> theta_initial, double l1, double l2, std::string log_path)
 {
   std::vector<double> dep_vars = theta_initial;
   double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-3; // accuracy and initial step
   auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
   auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const std::vector<double>& f, std::vector<double> &dydx, double l){this->RHS_for_boost(f, dydx, l);}, dep_vars, l1, l2, h_init); // make range for integration
   auto it=ode_range.first;
-  while(it != ode_range.second){ // integration 
+  if (log_path != ""){ // with logs
+    ofstream log_stream(log_path + "/log_" + std::to_string(int(phi_*180/constants::PI)));
+    while(it != ode_range.second){ // integration 
     if(stop_condition(it->second)){ // stop integration if Udr > c(?!)
       break;
     }
-    //logs - REDO
-    // plot << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << constants::R_star * Globals::omega / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << ", " << gFunc(it->second) << std::endl;
+    log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) << std::endl;
     it++; // make integration step
+    }
   }
-  return dep_vars;
+  else{ //no logs
+    while(it != ode_range.second){ // integration 
+      if(stop_condition(it->second)){ // stop integration if Udr > c(?!)
+        break;
+      }
+      it++; // make integration step
+    }
+  }
+ return dep_vars;
 }
+
 
 bool FixedHeightSolver::stop_condition(double l){
   return false;

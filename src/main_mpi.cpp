@@ -22,13 +22,14 @@ mpirun --use-hwthread-cpus -np 12 ./bin/loki_mpi -i inputs_outputs/loki.input -o
 #include "../lib/functions.h"
 
 int main(int argc, char* argv[]) {
-    //create interface for calculation
-    CppInterface calculation_interface;
     //reading input output paths
     std::string input_path, output_path;
     read_in_out(input_path, output_path, argc, argv); // place input and output paths from cmd -i -o flags into input_path and output_path variables
-    calculation_interface.init_from_file(input_path);
+    //create interface for calculation
     make_dir(output_path);
+    make_dir(output_path+"/logs");
+    CppInterface calculation_interface(output_path+"/logs");
+    calculation_interface.init_from_file(input_path);
     //read phase start, end ans step
     double phi_start_global = read_from_file(input_path, "phi_start");
     double phi_end_global = read_from_file(input_path, "phi_end");
@@ -60,6 +61,7 @@ int main(int argc, char* argv[]) {
     //split computation domain
     auto phases = split_phases(phi_start_global, phi_end_global, phi_step, size, rank);
     // computation of the profile
+    
     auto result = calculation_interface.calculate_profile(phases.first, phases.second, phi_step, emission_mode, false);
     //wrting output data to file
     MPI_Barrier(MPI_COMM_WORLD); // wait untill all processes have finished

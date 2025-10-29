@@ -18,12 +18,13 @@ class FixedHeightSolver{
 
     public:
     FixedHeightSolver(double phi_deg, int mode, ObservedRadioPulsar &PSR, FixedHeightModel &model);
+
     /// @brief solve Kravtsov-Orlov equations
     /// @param phi pulsar phase in degrees
     /// @param theta_inital inital values for comlex polarisation angle (as length 2 vector)
     /// @param mode emission mode (1 - Omode, 0 - Xmode)
     /// @return theta_final -  final complex polarisation angle (as length 2 vector)
-    std::vector<double> solve_KO_equations(std::vector<double> theta_initial, double l1, double l2);
+    std::vector<double> solve_KO_equations(std::vector<double> theta_initial, double l1, double l2, std::string log_path="");
 
     /// @brief RHS for solving Kravtsov-Orlov equations using <boost/numeric/odeint.hpp> integration routines
     /// @param f RHS function
