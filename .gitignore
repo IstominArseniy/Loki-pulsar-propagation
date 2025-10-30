@@ -1,5 +1,6 @@
 # Folders #
 /bin/*
+/inputs_outputs/*
 
 # DAT files #
 *.dat

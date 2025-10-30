@@ -54,6 +54,8 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, boo
     FixedHeightSolver solver(phi, mode, PSR_, model_);
     double l1 = solver.find_initial_point(false);
     double l2 = 1.5 * get_R_escape();
+    // std::cout << phi << std::endl;
+
     // double l2 = l1 * 1.01;
     std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);
     std::vector<double> theta_final = solver.solve_KO_equations(theta_init, l1, l2, log_path_);
@@ -75,7 +77,7 @@ std::vector<std::map<std::string, double> > CppInterface::calculate_profile(doub
     std::vector<std::map<std::string, double> > profile;
     if (use_multiprocessing == false){
         double phi_tmp = phi1;
-        while(phi_tmp <= phi2){
+        while(phi_tmp < phi2){
             auto result = find_ILVPA(phi_tmp, mode);
             profile.push_back(result);
             phi_tmp += phi_step;

@@ -163,6 +163,9 @@ class FixedHeightSolver{
     bool stop_condition(double l);
 
 
+    double Q_denominator(double l);
+
+
 
     /// @brief polar angle of magnetic filed projected to the plane perpendicular to the ray
     /// @param l distnace along the ray
@@ -188,3 +191,4 @@ class FixedHeightSolver{
     double dtau (double l);
 
 };
+

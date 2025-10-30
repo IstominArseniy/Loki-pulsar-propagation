@@ -19,7 +19,6 @@ FixedHeightSolver::FixedHeightSolver(double phi_deg, int mode, ObservedRadioPuls
     std::pair<double, double> emission_coords = find_emission_point();
     theta_em_ = emission_coords.first;
     phi_em_ = emission_coords.second;
-
 }
 
 std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> theta_initial, double l1, double l2, std::string log_path)
@@ -30,12 +29,12 @@ std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> th
   auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const std::vector<double>& f, std::vector<double> &dydx, double l){this->RHS_for_boost(f, dydx, l);}, dep_vars, l1, l2, h_init); // make range for integration
   auto it=ode_range.first;
   if (log_path != ""){ // with logs
-    ofstream log_stream(log_path + "/log_" + std::to_string(int(phi_*180/constants::PI)));
+    ofstream log_stream(log_path + "/log_" + std::to_string(int(std::round(phi_*180/constants::PI))));
     while(it != ode_range.second){ // integration 
     if(stop_condition(it->second)){ // stop integration if Udr > c(?!)
       break;
     }
-    log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) << std::endl;
+    log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) <<  ", " << Q_denominator(it->second) << std::endl;
     it++; // make integration step
     }
   }
@@ -53,6 +52,16 @@ std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> th
 
 bool FixedHeightSolver::stop_condition(double l){
   return false;
+}
+
+double FixedHeightSolver::Q_denominator(double l)
+{
+  double vx = vUdr(l)(0);
+  double vy = vUdr(l)(1);
+  double vz = vUdr(l)(2);
+  double sinth = std::sin(theta_kb(l));
+  double costh = std::cos(theta_kb(l));
+  return (costh * (1 - vx * vx - vy * vy) - vz * (1.0 - sinth * vx));
 }
 
 void FixedHeightSolver::RHS_for_boost(const std::vector<double>& f, std::vector<double> &dydx, double l) {
@@ -219,8 +228,9 @@ Vector3d FixedHeightSolver::vUdr (double l) {
     temp(0) = 0;
     temp(1) = 0;
     temp(2) = 0.9;
-    return temp;
     // throw_error("ERROR: vUdr > 1.");
+    std::cout << "!!!" <<std::endl;
+    return temp;
   }
   temp(2) = std::sqrt(1 - std::pow(temp(0), 2) - std::pow(temp(1), 2));
   return temp;
@@ -304,6 +314,7 @@ double FixedHeightSolver::Q (double l) {
   return  model_.lambda * omegaB(l) * PSR_.omega_obs * (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2)) * model_.Q_type_avrg(std::pow(gammaU(l) * omegaW(l) / omegaB(l), 2))
    / (2 * std::pow(omegaW(l), 2) * (costh * (1 - vx * vx - vy * vy) - vz * (1.0 - sinth * vx))); // ONLY FOR ZERO TEMPERATURE !!! 
 }
+
 
 double FixedHeightSolver::Lambda (double l) {
   double vx = vUdr(l)(0);
