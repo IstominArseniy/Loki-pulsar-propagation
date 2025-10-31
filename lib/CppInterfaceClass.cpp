@@ -42,7 +42,6 @@ void CppInterface::init_from_file(std::string filename)
     model_dict["fr"] = read_from_file(filename, "fr");
     model_dict["fphi"] = read_from_file(filename, "fphi");
     model_dict["Rem"] = read_from_file(filename, "R_em");
-    model_dict["L_SHIFT"] = 1;
     model_dict["lambda"] = read_from_file(filename, "lambda");
     model_dict["gamma0"] = read_from_file(filename, "gamma0");
     PSR_ = ObservedRadioPulsar(psr_dict);
@@ -54,9 +53,6 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, boo
     FixedHeightSolver solver(phi, mode, PSR_, model_);
     double l1 = solver.find_initial_point(false);
     double l2 = 1.5 * get_R_escape();
-    // std::cout << phi << std::endl;
-
-    // double l2 = l1 * 1.01;
     std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);
     std::vector<double> theta_final = solver.solve_KO_equations(theta_init, l1, l2, log_path_);
     double I = solver.find_intensity();

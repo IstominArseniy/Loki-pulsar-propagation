@@ -8,7 +8,6 @@ FixedHeightModel::FixedHeightModel(std::map<std::string, double> model_dict, Obs
     fr = model_dict["fr"];
     fphi = model_dict["fphi"];
     Rem = model_dict["Rem"];
-    L_SHIFT = model_dict["L_SHIFT"];
     lambda = model_dict["lambda"]; // questionable
     gamma0 = model_dict["gamma0"]; // questionable
     PSR_ = PSR;

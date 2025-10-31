@@ -24,7 +24,7 @@ FixedHeightSolver::FixedHeightSolver(double phi_deg, int mode, ObservedRadioPuls
 std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> theta_initial, double l1, double l2, std::string log_path)
 {
   std::vector<double> dep_vars = theta_initial;
-  double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-3; // accuracy and initial step
+  double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-6; // accuracy and initial step | was 1e-6, 1e-6, 1e-3
   auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
   auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const std::vector<double>& f, std::vector<double> &dydx, double l){this->RHS_for_boost(f, dydx, l);}, dep_vars, l1, l2, h_init); // make range for integration
   auto it=ode_range.first;
@@ -86,11 +86,11 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
 {
   std::vector<double> theta_final(2);
   double Lambda_integral;
-  Lambda_integral = integrate([this](double l){return this->Lambda(l);}, model_.L_SHIFT, l);
+  Lambda_integral = integrate([this](double l){return this->Lambda(l);}, 0, l);
   double coefficient = constants::c / PSR_.Rs / PSR_.omega_obs;
-  double delta_theta = - coefficient / Lambda(model_.L_SHIFT) * (BetaB_derivative(model_.L_SHIFT) + delta_derivative(model_.L_SHIFT)) * std::sin(Lambda_integral / coefficient);
+  double delta_theta = - coefficient / Lambda(0) * (BetaB_derivative(0) + delta_derivative(0)) * std::sin(Lambda_integral / coefficient);
   double theta2 = -coefficient / Lambda(l) * (BetaB_derivative(l) + delta_derivative(l)) - 1 / 2 / Q(l) + 
-  coefficient / Lambda(model_.L_SHIFT) * (BetaB_derivative(model_.L_SHIFT) + delta_derivative(model_.L_SHIFT)) * std::cos(Lambda_integral / coefficient);
+  coefficient / Lambda(0) * (BetaB_derivative(0) + delta_derivative(0)) * std::cos(Lambda_integral / coefficient);
   if (mode_ == 0){
     theta_final[0] = constants::PI / 2 + BetaB(l) + delta(l) + delta_theta;
     theta_final[1] = -theta2;
@@ -108,10 +108,10 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
   if(use_binary_search){ // binary search
     double n_iter=0;
 
-    if(std::abs(Lambda_derivative(model_.L_SHIFT) / std::pow(Lambda(model_.L_SHIFT), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs) > freq0)
-      return model_.L_SHIFT; //shift to avoid zero kB angle
+    if(std::abs(Lambda_derivative(0) / std::pow(Lambda(0), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs) > freq0)
+      return 0; //shift to avoid zero kB angle
 
-    double l_left = model_.L_SHIFT, l_right = PSR_.RLC / 10, l_cur;   
+    double l_left = 0, l_right = PSR_.RLC / 10, l_cur;   
     l_cur = (l_left + l_right) / 2;
 
     while(std::abs(std::abs(Lambda_derivative(l_cur) / std::pow(Lambda(l_cur), 2) * 2 * constants::c  / PSR_.Rs/ PSR_.omega_obs)  - freq0) > 0.01 && n_iter < 30){
@@ -127,7 +127,7 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
     return l_cur;
   }
   else{ // linear search
-    double cr_l = model_.L_SHIFT, step = 10;
+    double cr_l = 0, step = 10;
     while(std::abs(Lambda_derivative(cr_l + step) / std::pow(Lambda(cr_l+step), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs) < freq0){
       cr_l += step;
     }
@@ -300,6 +300,9 @@ double FixedHeightSolver::BetaB (double l) {
   Vector3d YY;
   XX = (PSR_.Omega_vec - PSR_.observer_vec.dot(PSR_.Omega_vec) * PSR_.observer_vec).normalized();
   YY = PSR_.observer_vec.cross(XX);
+  if (l < 1e-1){
+    l = 1e-1;
+  }
   double bx = XX.dot(vB(l));
   double by = YY.dot(vB(l));
   return std::atan(by / bx);

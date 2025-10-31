@@ -1,6 +1,6 @@
 /*
 command to run this programm 
-mpirun --use-hwthread-cpus -np 12 ./bin/loki_mpi -i inputs_outputs/loki.input -o inputs_outputs/my_output
+mpirun --use-hwthread-cpus -np 10 ./bin/loki_mpi -i inputs_outputs/loki.input -o inputs_outputs/my_output
 */
  
 

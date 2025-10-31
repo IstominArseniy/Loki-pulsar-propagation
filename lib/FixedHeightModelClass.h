@@ -13,7 +13,6 @@ class FixedHeightModel{
     ObservedRadioPulsar PSR_;
 
     public:
-    double L_SHIFT;
     double lambda;
     double gamma0;
     double Rem;
