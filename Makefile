@@ -24,7 +24,7 @@ main: $(SOURCES) $(EXECUTABLE)
 main_mpi: $(SOURCES_MPI) $(EXECUTABLE_MPI)
 
 whateverittakes: $(BINDINGSOURCES) $(LIBSOURCES)
-	$(CC) $(CFLAGS) -shared -fPIC $$(python3 -m pybind11 --includes) $(BINDINGSOURCES) $(LIBSOURCES) -o $(BINDINGDIR)/cpp_interface$$(python3-config --extension-suffix)
+	$(CC) $(CFLAGS) -shared -fPIC $$(python3 -m pybind11 --includes) $(BINDINGSOURCES) $(LIBSOURCES) -o bin/cpp_interface$$(python3-config --extension-suffix)
 
 lib: $(LIBSOURCES)
 	$(CC) $(CFLAGS) -shared -fPIC $(LIBSOURCES) -o bin/libmylib.so

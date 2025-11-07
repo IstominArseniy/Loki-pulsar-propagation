@@ -2,7 +2,7 @@
 //#include <math.h>
 
 double integrate (std::function<double(double)> func, double a, double b) {
-	double r = a, dr = (b - a) / 500.0;
+	double r = a, dr = (b - a) / 5000.0;
 	double s = 0.0;
 	while (r < b - dr) {
 		s += 0.5 * dr * (func(r) + func(r + dr));

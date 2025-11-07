@@ -16,6 +16,8 @@ FixedHeightModel::FixedHeightModel(std::map<std::string, double> model_dict, Obs
 
 double FixedHeightModel::density_profile(double x_pc, double phi_pc)
 {
+    double f = std::pow(x_pc, 2);
+    // return (pow(f, 2.5) * exp(-f * f) / (pow(f, 2.5) + pow(0.5, 2.5))) * 1;
     return 100 * std::pow(x_pc, 3) * std::exp(-10 * std::pow(x_pc, 2));
 }
 

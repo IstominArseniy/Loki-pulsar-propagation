@@ -60,10 +60,9 @@ int main(int argc, char* argv[]) {
     }
     //split computation domain
     auto phases = split_phases(phi_start_global, phi_end_global, phi_step, size, rank);
-    // std::cout<<phases.first<<" "<<phases.second<<std::endl;
     // computation of the profile
     
-    auto result = calculation_interface.calculate_profile(phases.first, phases.second, phi_step, emission_mode, false);
+    auto result = calculation_interface.calculate_profile(phases.first, phases.second, phi_step, emission_mode);
     //wrting output data to file
     MPI_Barrier(MPI_COMM_WORLD); // wait untill all processes have finished
     if(rank == 0){ // recieve data from all processes

@@ -31,10 +31,11 @@ int main(int argc, char* argv[]) {
     std::cout << "R_esc = " << calculation_interface.get_R_escape() << std::endl;
     std::cout << "R_LC = " << calculation_interface.get_RLC() << std::endl;
     // computation of the profile
-    auto result = calculation_interface.calculate_profile(phi_start, phi_end, phi_step, emission_mode, false);
+    auto result = calculation_interface.calculate_profile(phi_start, phi_end, phi_step, emission_mode);
     //writing data into output
     for(auto& elem : result){
         output << elem["phase"] << " " << elem["I"] << " " << elem["V"] << " " << elem["PA"] << std::endl;
     }
+    output.close();
     return 0;
 }

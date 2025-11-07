@@ -24,19 +24,21 @@ FixedHeightSolver::FixedHeightSolver(double phi_deg, int mode, ObservedRadioPuls
 std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> theta_initial, double l1, double l2, std::string log_path)
 {
   std::vector<double> dep_vars = theta_initial;
-  double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-6; // accuracy and initial step | was 1e-6, 1e-6, 1e-3
+  double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-8;
   auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
   auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const std::vector<double>& f, std::vector<double> &dydx, double l){this->RHS_for_boost(f, dydx, l);}, dep_vars, l1, l2, h_init); // make range for integration
   auto it=ode_range.first;
   if (log_path != ""){ // with logs
-    ofstream log_stream(log_path + "/log_" + std::to_string(int(std::round(phi_*180/constants::PI))));
-    while(it != ode_range.second){ // integration 
+    ofstream log_stream(log_path + "/log_" + std::to_string(std::round(100 * phi_*180/constants::PI)/100));
+    while(it != ode_range.second){ // integration
     if(stop_condition(it->second)){ // stop integration if Udr > c(?!)
       break;
     }
-    log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) <<  ", " << Q_denominator(it->second) << std::endl;
+    log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) << ", " << theta_kb(it->second) << std::endl;
+    // log_stream << -2*vUdr(it->second)(1)*std::cos(theta_kb(it->second))*(std::sin(theta_kb(it->second))-vUdr(it->second)(0)) / ((std::sin(theta_kb(it->second))-vUdr(it->second)(0))*(std::sin(theta_kb(it->second))-vUdr(it->second)(0)) - std::cos(theta_kb(it->second))*std::cos(theta_kb(it->second))*vUdr(it->second)(1)*vUdr(it->second)(1)) << std::endl;
     it++; // make integration step
     }
+    log_stream.close();
   }
   else{ //no logs
     while(it != ode_range.second){ // integration 
@@ -109,8 +111,8 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
     double n_iter=0;
 
     if(std::abs(Lambda_derivative(0) / std::pow(Lambda(0), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs) > freq0)
-      return 0; //shift to avoid zero kB angle
-
+      return 0; 
+    
     double l_left = 0, l_right = PSR_.RLC / 10, l_cur;   
     l_cur = (l_left + l_right) / 2;
 
@@ -218,6 +220,9 @@ Vector3d FixedHeightSolver::vBetaR (double l) {
 Vector3d FixedHeightSolver::vUdr (double l) {  
   Vector3d vn;
   Vector3d vm;
+  if(l < 0.1){
+    l = 0.1;
+  }
   vn = (PSR_.observer_vec - PSR_.observer_vec.dot(vb(l)) * vb(l)).normalized();
   vm = (vb(l).cross(vn)).normalized();
 
@@ -243,7 +248,7 @@ double FixedHeightSolver::gammaU (double l) {
 }
 
 double FixedHeightSolver::x_pc(double l){
-  return std::sin(psi_m(l)) * std::sqrt(PSR_.RLC / vR(l).norm());
+  return std::abs(std::sin(psi_m(l))) * std::sqrt(PSR_.RLC / vR(l).norm());
 }
 
 double FixedHeightSolver::phi_pc(double l){
@@ -291,8 +296,12 @@ double FixedHeightSolver::delta (double l) {
   double vy = vUdr(l) (1);
   double sinth = std::sin(theta_kb(l));
   double costh = std::cos(theta_kb(l));
-  double sign = sgn (- vy * costh / std::sqrt(std::pow(sinth - vx, 2) + std::pow(costh * vy , 2)));
-  return sign * std::acos((sinth - vx) / std::sqrt(std::pow(sinth - vx, 2) + std::pow(costh * vy , 2)));
+  // std::cout << phi_ * 180 /constants::PI << " " << -vUdr(0) (1) << " " << -vUdr(0) (0) << " " << std::atan2(-std::cos(theta_kb(0))*vUdr(0) (1), std::sin(theta_kb(0))- vUdr(0) (0)) << std::endl;
+  // double sign = sgn (- vy * costh / std::sqrt(std::pow(sinth - vx, 2) + std::pow(costh * vy , 2)));
+  // return sign * std::acos((sinth - vx) / std::sqrt(std::pow(sinth - vx, 2) + std::pow(costh * vy , 2)));
+  // return std::atan2(-costh * vy, sinth-vx);
+  // return 0.5 * std::atan(-2*vy*costh*(sinth-vx) / ((sinth-vx)*(sinth-vx) - costh*costh*vy*vy));
+  return 0.5 * std::atan2(-2*vy*costh*(sinth-vx), ((sinth-vx)*(sinth-vx) - costh*costh*vy*vy));
 }
 
 double FixedHeightSolver::BetaB (double l) {
@@ -305,7 +314,7 @@ double FixedHeightSolver::BetaB (double l) {
   }
   double bx = XX.dot(vB(l));
   double by = YY.dot(vB(l));
-  return std::atan(by / bx);
+  return std::atan2(by, bx);  // ??? was atan (by/bx)
 }
 
 double FixedHeightSolver::Q (double l) {
@@ -361,5 +370,5 @@ double FixedHeightSolver::dtau (double l) {
 }
 
 double FixedHeightSolver::get_tau(){
-  return integrate([this](double l){return this->dtau(l);}, 1, 0.95 * PSR_.RLC);
+  return integrate([this](double l){return this->dtau(l);}, 1, PSR_.RLC);
 }

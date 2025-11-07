@@ -48,12 +48,13 @@ void CppInterface::init_from_file(std::string filename)
     model_ = FixedHeightModel(model_dict, PSR_);
 }
 
-std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, bool full_output)
+std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode)
 {
     FixedHeightSolver solver(phi, mode, PSR_, model_);
     double l1 = solver.find_initial_point(false);
-    double l2 = 1.5 * get_R_escape();
+    double l2 = 2.5 * get_R_escape();
     std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);
+    // std::cout << phi << " " << solver.delta(0) << std::endl;
     std::vector<double> theta_final = solver.solve_KO_equations(theta_init, l1, l2, log_path_);
     double I = solver.find_intensity();
     double tau = solver.get_tau();
@@ -69,18 +70,13 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, boo
     return result;
 }
 
-std::vector<std::map<std::string, double> > CppInterface::calculate_profile(double phi1, double phi2, double phi_step, int mode, bool use_multiprocessing, double n_threads){
+std::vector<std::map<std::string, double> > CppInterface::calculate_profile(double phi1, double phi2, double phi_step, int mode){
     std::vector<std::map<std::string, double> > profile;
-    if (use_multiprocessing == false){
-        double phi_tmp = phi1;
-        while(phi_tmp < phi2){
-            auto result = find_ILVPA(phi_tmp, mode);
-            profile.push_back(result);
-            phi_tmp += phi_step;
-        }
-    }
-    else{
-        std::cout << "NOT IMPLEMENTED YET!!!";
+    double phi_tmp = phi1;
+    while(phi_tmp < phi2){
+        auto result = find_ILVPA(phi_tmp, mode);
+        profile.push_back(result);
+        phi_tmp += phi_step;
     }
     return profile;
 }
