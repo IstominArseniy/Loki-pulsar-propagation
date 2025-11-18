@@ -20,6 +20,7 @@ class CppInterface{
     CppInterface (ObservedRadioPulsar PSR, std::map<std::string, double> param_dict, std::string log_path=""); 
     void init_from_file(std::string filename);
     std::map<std::string, double> find_ILVPA(double phi, int mode); // will be exposed to Python
+    double find_I(double phi, int mode, bool with_absorption=true);
     double get_R_escape();
     double get_RLC();
     double get_rho();

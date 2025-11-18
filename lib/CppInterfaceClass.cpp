@@ -72,6 +72,16 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode)
     return result;
 }
 
+double CppInterface::find_I(double phi, int mode, bool with_absorption)
+{
+    FixedHeightSolver solver(phi, mode, PSR_, model_);
+    double I = solver.find_intensity();
+    double tau = solver.get_tau();
+    if(with_absorption)
+        I *= std::exp(-tau);
+    return I;
+}
+
 std::vector<std::map<std::string, double> > CppInterface::calculate_profile(double phi1, double phi2, double phi_step, int mode){
     std::vector<std::map<std::string, double> > profile;
     double phi_tmp = phi1;

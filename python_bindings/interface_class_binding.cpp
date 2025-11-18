@@ -9,6 +9,8 @@ PYBIND11_MODULE(cpp_interface, m, py::mod_gil_not_used()) {
     py::class_<CppInterface>(m, "ProfileCalculator")
         .def(py::init<const std::map<std::string, double>, const std::map<std::string, double> >())
         .def("find_ILVPA", &CppInterface::find_ILVPA)
+        .def("find_I", &CppInterface::find_I)
+        .def("get_rho", &CppInterface::get_rho)
         .def("calculate_profile", &CppInterface::calculate_profile);
 
 }
