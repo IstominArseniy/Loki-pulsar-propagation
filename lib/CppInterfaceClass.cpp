@@ -67,7 +67,7 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode)
     result["phase"] = phi;
     result["I"] = I;
     result["L"] = std::sqrt(I*I - V*V);
-    result["V"] = V;
+    result["V"] = -V;
     result["PA"] = PA;
     return result;
 }
