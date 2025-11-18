@@ -23,6 +23,7 @@ class ObservedRadioPulsar{
     double dzeta;
     double Rs;
     double RLC;
+    double Rpc;
     Vector3d observer_vec;
     Vector3d Omega_vec;
     private:

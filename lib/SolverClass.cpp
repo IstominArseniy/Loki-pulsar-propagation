@@ -34,7 +34,7 @@ std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> th
     if(stop_condition(it->second)){ // stop integration if Udr > c(?!)
       break;
     }
-    log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) << ", " << theta_kb(it->second) << std::endl;
+    log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaB (it->second) + delta (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) << ", " << vUdr(it->second)(0) << ", " << vUdr(it->second)(1) << std::endl;
     // log_stream << -2*vUdr(it->second)(1)*std::cos(theta_kb(it->second))*(std::sin(theta_kb(it->second))-vUdr(it->second)(0)) / ((std::sin(theta_kb(it->second))-vUdr(it->second)(0))*(std::sin(theta_kb(it->second))-vUdr(it->second)(0)) - std::cos(theta_kb(it->second))*std::cos(theta_kb(it->second))*vUdr(it->second)(1)*vUdr(it->second)(1)) << std::endl;
     it++; // make integration step
     }
@@ -142,6 +142,20 @@ double FixedHeightSolver::find_intensity()
     return gFunc(0);
 }
 
+void FixedHeightSolver::write_params_on_ray(std::string log_path)
+{
+    if (log_path == "")
+      return;
+    std::ofstream param_stream(log_path + "/prop_params_" + std::to_string(std::round(100 * phi_*180/constants::PI)/100));
+    double l = 0;
+    double dl = 1;
+    while (l <= 0.2*PSR_.RLC){
+        param_stream << l << ", " << Lambda(l) << ", " << delta(l) << ", " << BetaB(l) << ", " << vUdr(l)(0) << ", " << vUdr(l)(1) << ", " << theta_kb(l) << ", " << x_pc(l) << std::endl;
+        l += dl;
+    }
+}
+
+
 // ------------------------------------------------------------"on ray" functions ----------------------------------------------------------
 Vector3d FixedHeightSolver::vMoment (double l) {
   /*
@@ -159,15 +173,17 @@ std::pair<double, double> FixedHeightSolver::find_emission_point()
   double theta_em = PSR_.chi;
   double phi_em = phi_;
   Vector3d vM = vMoment(0);
+  // Vector3d rand_vector = (Vector3d::Random().cross(PSR_.observer_vec)).normalized(); // regularisation of theta_kb
+  Vector3d target_vector = PSR_.observer_vec;
   auto func1 = [&](double theta, double phi){
     Vector3d vPoint;
     vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
-    return (model_.Bfield(vPoint, vM)).cross(PSR_.observer_vec)(0);
+    return (model_.Bfield(vPoint, vM)).cross(target_vector)(0);
   };
   auto func2 = [&](double theta, double phi){
     Vector3d vPoint;
     vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
-    return (model_.Bfield(vPoint, vM)).cross(PSR_.observer_vec)(1);
+    return (model_.Bfield(vPoint, vM)).cross(target_vector)(1);
   };
   for(int i = 0; i < 15; i ++) {
       double f1x = DX(func1, theta_em, phi_em);
@@ -220,11 +236,14 @@ Vector3d FixedHeightSolver::vBetaR (double l) {
 Vector3d FixedHeightSolver::vUdr (double l) {  
   Vector3d vn;
   Vector3d vm;
-  if(l < 0.1){
-    l = 0.1;
+  if(l < 1){
+    vn = (PSR_.observer_vec - PSR_.observer_vec.dot(vb(1)) * vb(1)).normalized();
+    vm = (vb(1).cross(vn)).normalized();    
   }
-  vn = (PSR_.observer_vec - PSR_.observer_vec.dot(vb(l)) * vb(l)).normalized();
-  vm = (vb(l).cross(vn)).normalized();
+  else{
+    vn = (PSR_.observer_vec - PSR_.observer_vec.dot(vb(l)) * vb(l)).normalized();
+    vm = (vb(l).cross(vn)).normalized();
+  }
 
   Vector3d temp;
   temp(0) = vBetaR(l).dot(vn);
@@ -297,8 +316,6 @@ double FixedHeightSolver::delta (double l) {
   double sinth = std::sin(theta_kb(l));
   double costh = std::cos(theta_kb(l));
   // std::cout << phi_ * 180 /constants::PI << " " << -vUdr(0) (1) << " " << -vUdr(0) (0) << " " << std::atan2(-std::cos(theta_kb(0))*vUdr(0) (1), std::sin(theta_kb(0))- vUdr(0) (0)) << std::endl;
-  // double sign = sgn (- vy * costh / std::sqrt(std::pow(sinth - vx, 2) + std::pow(costh * vy , 2)));
-  // return sign * std::acos((sinth - vx) / std::sqrt(std::pow(sinth - vx, 2) + std::pow(costh * vy , 2)));
   // return std::atan2(-costh * vy, sinth-vx);
   // return 0.5 * std::atan(-2*vy*costh*(sinth-vx) / ((sinth-vx)*(sinth-vx) - costh*costh*vy*vy));
   return 0.5 * std::atan2(-2*vy*costh*(sinth-vx), ((sinth-vx)*(sinth-vx) - costh*costh*vy*vy));

@@ -37,6 +37,7 @@ void ObservedRadioPulsar::initialize_derived_params()
     beta = beta_deg * constants::PI / 180;
     dzeta = chi - beta;
     RLC = (constants::c / Omega) / Rs;
+    Rpc = std::sqrt(1/RLC);
     Omega_vec << 0, 0, Omega;
     observer_vec << std::sin(dzeta), 0, std::cos(dzeta);
 }

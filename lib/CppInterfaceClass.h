@@ -22,6 +22,7 @@ class CppInterface{
     std::map<std::string, double> find_ILVPA(double phi, int mode); // will be exposed to Python
     double get_R_escape();
     double get_RLC();
+    double get_rho();
     std::vector<std::map<std::string, double> > calculate_profile(double phi1, double phi2, double phi_step, int mode);
     static std::vector<double> vectorize_data(std::vector<std::map<std::string, double> > data);
     static std::vector<std::map<std::string, double> > restore_data(std::vector<double> data);

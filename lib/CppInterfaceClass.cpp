@@ -2,6 +2,8 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <fstream>
+
 #include "constants.h"
 #include "functions.h"
 #include "CppInterfaceClass.h"
@@ -53,8 +55,8 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode)
     FixedHeightSolver solver(phi, mode, PSR_, model_);
     double l1 = solver.find_initial_point(false);
     double l2 = 2.5 * get_R_escape();
+    solver.write_params_on_ray(log_path_);
     std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);
-    // std::cout << phi << " " << solver.delta(0) << std::endl;
     std::vector<double> theta_final = solver.solve_KO_equations(theta_init, l1, l2, log_path_);
     double I = solver.find_intensity();
     double tau = solver.get_tau();
@@ -80,6 +82,8 @@ std::vector<std::map<std::string, double> > CppInterface::calculate_profile(doub
     }
     return profile;
 }
+
+
 
 std::vector<double> CppInterface::vectorize_data(std::vector<std::map<std::string, double> > data)
 {
@@ -118,4 +122,8 @@ double CppInterface::get_R_escape()
 double CppInterface::get_RLC()
 {
     return PSR_.RLC;
+}
+
+double CppInterface::get_rho(){
+    return 3/2*std::sqrt(model_.Rem)*PSR_.Rpc * 180 / constants::PI;
 }

@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
     make_dir(output_path);
     make_dir(output_path+"/logs");
     CppInterface calculation_interface(output_path+"/logs");
+    // CppInterface calculation_interface("");
     calculation_interface.init_from_file(input_path);
     //read phase start, end ans step
     double phi_start_global = read_from_file(input_path, "phi_start");
@@ -51,6 +52,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Calculation started with " << size << " processes." << std::endl;
         std::cout << "R_esc = " << calculation_interface.get_R_escape() << std::endl;
         std::cout << "R_LC = " << calculation_interface.get_RLC() << std::endl;
+        std::cout << "Half-openning angle = " << calculation_interface.get_rho() << std::endl;
         if (emission_mode == 0){
             std::cout << "Emission mode = X " << std::endl;
         }

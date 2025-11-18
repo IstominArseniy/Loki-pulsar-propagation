@@ -61,6 +61,9 @@ class FixedHeightSolver{
     /// @return tau - optical thickness (I = I0 * e^(-tau))
     double get_tau();
 
+    void write_params_on_ray(std::string log_path);
+
+
 
     // --------------------------Main Kravtsov-Orlov equation functions------------------------------------
 
