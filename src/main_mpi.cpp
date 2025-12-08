@@ -29,7 +29,6 @@ int main(int argc, char* argv[]) {
     make_dir(output_path);
     make_dir(output_path+"/logs");
     CppInterface calculation_interface(output_path+"/logs");
-    // CppInterface calculation_interface("");
     calculation_interface.init_from_file(input_path);
     //read phase start, end ans step
     double phi_start_global = read_from_file(input_path, "phi_start");
@@ -64,7 +63,7 @@ int main(int argc, char* argv[]) {
     auto phases = split_phases(phi_start_global, phi_end_global, phi_step, size, rank);
     // computation of the profile
     
-    auto result = calculation_interface.calculate_profile(phases.first, phases.second, phi_step, emission_mode);
+    auto result = calculation_interface.calculate_profile(phases.first, phases.second, phi_step, emission_mode, false);
     //wrting output data to file
     MPI_Barrier(MPI_COMM_WORLD); // wait untill all processes have finished
     if(rank == 0){ // recieve data from all processes

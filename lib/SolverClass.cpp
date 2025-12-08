@@ -88,11 +88,12 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
 {
   std::vector<double> theta_final(2);
   double Lambda_integral;
-  Lambda_integral = integrate([this](double l){return this->Lambda(l);}, 0, l);
+  double starting_point=0;
+  Lambda_integral = integrate([this](double l){return this->Lambda(l);}, starting_point, l);
   double coefficient = constants::c / PSR_.Rs / PSR_.omega_obs;
-  double delta_theta = - coefficient / Lambda(0) * (BetaB_derivative(0) + delta_derivative(0)) * std::sin(Lambda_integral / coefficient);
+  double delta_theta = - coefficient / Lambda(starting_point) * (BetaB_derivative(starting_point) + delta_derivative(starting_point)) * std::sin(Lambda_integral / coefficient);
   double theta2 = -coefficient / Lambda(l) * (BetaB_derivative(l) + delta_derivative(l)) - 1 / 2 / Q(l) + 
-  coefficient / Lambda(0) * (BetaB_derivative(0) + delta_derivative(0)) * std::cos(Lambda_integral / coefficient);
+  coefficient / Lambda(starting_point) * (BetaB_derivative(0) + delta_derivative(starting_point)) * std::cos(Lambda_integral / coefficient);
   if (mode_ == 0){
     theta_final[0] = constants::PI / 2 + BetaB(l) + delta(l) + delta_theta;
     theta_final[1] = -theta2;
@@ -148,9 +149,9 @@ void FixedHeightSolver::write_params_on_ray(std::string log_path)
       return;
     std::ofstream param_stream(log_path + "/prop_params_" + std::to_string(std::round(100 * phi_*180/constants::PI)/100));
     double l = 0;
-    double dl = 1;
-    while (l <= 0.2*PSR_.RLC){
-        param_stream << l << ", " << Lambda(l) << ", " << delta(l) << ", " << BetaB(l) << ", " << vUdr(l)(0) << ", " << vUdr(l)(1) << ", " << theta_kb(l) << ", " << x_pc(l) << std::endl;
+    double dl = 2;
+    while (l <= 1.5 * PSR_.RLC){
+        param_stream << l << ", " << Lambda(l) << ", " << delta(l) << ", " << BetaB(l) << ", " << vUdr(l)(0) << ", " << vUdr(l)(1) << ", " << theta_kb(l) << ", " << x_pc(l) << ", " << Q(l) << std::endl;
         l += dl;
     }
 }
@@ -249,11 +250,12 @@ Vector3d FixedHeightSolver::vUdr (double l) {
   temp(0) = vBetaR(l).dot(vn);
   temp(1) = vBetaR(l).dot(vm);
   if (temp(0)*temp(0) + temp(1) * temp(1) >= 1.0) {
-    temp(0) = 0;
-    temp(1) = 0;
-    temp(2) = 0.9;
+    double coef = 1/std::sqrt(temp(0)*temp(0) + temp(1) * temp(1))*(1e-3);
+    temp(0) *= coef;
+    temp(1) *= coef;
+    temp(2) = 0;
     // throw_error("ERROR: vUdr > 1.");
-    std::cout << "!!!" <<std::endl;
+    std::cout << "Udr > 1" << std::endl;
     return temp;
   }
   temp(2) = std::sqrt(1 - std::pow(temp(0), 2) - std::pow(temp(1), 2));
@@ -351,7 +353,7 @@ double FixedHeightSolver::Lambda (double l) {
   double sinth = std::sin(theta_kb(l));
   double costh = std::cos(theta_kb(l));
   double avrg = model_.Lambda_type_avrg(std::pow(gammaU(l) * omegaW(l) / omegaB(l), 2));
-  return (-1.0 / 2.0) * std::pow(omegaP(l) * gammaU(l) / omegaW(l), 2) * avrg *
+  return sgn(avrg) * (-1.0 / 2.0) * std::pow(omegaP(l) * gammaU(l) / omegaW(l), 2) * avrg *
    (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2));
 }
 

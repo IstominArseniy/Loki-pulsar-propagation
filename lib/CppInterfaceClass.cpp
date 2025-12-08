@@ -50,17 +50,19 @@ void CppInterface::init_from_file(std::string filename)
     model_ = FixedHeightModel(model_dict, PSR_);
 }
 
-std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode)
+std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, bool with_absorption)
 {
     FixedHeightSolver solver(phi, mode, PSR_, model_);
     double l1 = solver.find_initial_point(false);
-    double l2 = 2.5 * get_R_escape();
+    double l2 = std::min(2.5 * get_R_escape(), 2*PSR_.RLC);
     solver.write_params_on_ray(log_path_);
     std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);
     std::vector<double> theta_final = solver.solve_KO_equations(theta_init, l1, l2, log_path_);
     double I = solver.find_intensity();
-    double tau = solver.get_tau();
-    I *= std::exp(-tau);
+    if(with_absorption==true){
+        double tau = solver.get_tau();
+        I *= std::exp(-tau);
+    }
     double V = I * std::tanh(2.0 * theta_final[1]);
     double PA = theta_final[0] * 180.0 / constants::PI;
     std::map<std::string, double> result;
@@ -76,17 +78,18 @@ double CppInterface::find_I(double phi, int mode, bool with_absorption)
 {
     FixedHeightSolver solver(phi, mode, PSR_, model_);
     double I = solver.find_intensity();
-    double tau = solver.get_tau();
-    if(with_absorption)
+    if(with_absorption){
+        double tau = solver.get_tau();
         I *= std::exp(-tau);
+    }
     return I;
 }
 
-std::vector<std::map<std::string, double> > CppInterface::calculate_profile(double phi1, double phi2, double phi_step, int mode){
+std::vector<std::map<std::string, double> > CppInterface::calculate_profile(double phi1, double phi2, double phi_step, int mode, bool with_absorption){
     std::vector<std::map<std::string, double> > profile;
     double phi_tmp = phi1;
     while(phi_tmp < phi2){
-        auto result = find_ILVPA(phi_tmp, mode);
+        auto result = find_ILVPA(phi_tmp, mode, with_absorption);
         profile.push_back(result);
         phi_tmp += phi_step;
     }
@@ -126,7 +129,6 @@ std::vector<std::map<std::string, double> > CppInterface::restore_data(std::vect
 double CppInterface::get_R_escape()
 {
     return 1.0e3 * std::pow(model_.lambda / 1.0e4, 1.0/3.0) * std::pow(model_.gamma0 / 100.0, -6.0/5.0) * std::pow(PSR_.B12, 2.0/5.0) * std::pow(PSR_.freqGHz, -2.0/5.0) * std::pow(PSR_.Period, -1.0/5.0);
-
 }
 
 double CppInterface::get_RLC()
@@ -135,5 +137,5 @@ double CppInterface::get_RLC()
 }
 
 double CppInterface::get_rho(){
-    return 3/2*std::sqrt(model_.Rem)*PSR_.Rpc * 180 / constants::PI;
+    return 3/2.0*std::sqrt(model_.Rem)*PSR_.Rpc * 180 / constants::PI;
 }
