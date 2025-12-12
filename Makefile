@@ -8,7 +8,7 @@ BINDINGDIR=python_bindings
 SOURCES=$(SRCDIR)/main.cpp 
 SOURCES_TEST=$(SRCDIR)/main_test.cpp 
 SOURCES_MPI=$(SRCDIR)/main_mpi.cpp 
-LIBSOURCES=$(LIBDIR)/CppInterfaceClass.cpp $(LIBDIR)/SolverClass.cpp $(LIBDIR)/PSRClass.cpp $(LIBDIR)/FixedHeightModelClass.cpp $(LIBDIR)/constants.cpp $(LIBDIR)/functions.cpp $(LIBDIR)/integrator.cpp $(LIBDIR)/read_write.cpp
+LIBSOURCES=$(LIBDIR)/CppInterfaceClass.cpp $(LIBDIR)/SolverClass.cpp $(LIBDIR)/PSRClass.cpp $(LIBDIR)/FixedHeightModelClass.cpp $(LIBDIR)/constants.cpp $(LIBDIR)/functions.cpp $(LIBDIR)/integrator.cpp $(LIBDIR)/read_write.cpp $(LIBDIR)/SolverClassNoDrift.cpp
 BINDINGSOURCES=$(BINDINGDIR)/interface_class_binding.cpp 
 LIBOBJECTS=$(LIBSOURCES:$(LIBDIR)/%.cpp=$(OBJDIR)/%.o)
 SRCOBJECTS=$(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
