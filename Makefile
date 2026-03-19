@@ -8,7 +8,7 @@ BINDINGDIR=python_bindings
 SOURCES=$(SRCDIR)/main.cpp 
 SOURCES_TEST=$(SRCDIR)/main_test.cpp 
 SOURCES_MPI=$(SRCDIR)/main_mpi.cpp 
-LIBSOURCES=$(LIBDIR)/CppInterfaceClass.cpp $(LIBDIR)/SolverClass.cpp $(LIBDIR)/PSRClass.cpp $(LIBDIR)/FixedHeightModelClass.cpp $(LIBDIR)/constants.cpp $(LIBDIR)/functions.cpp $(LIBDIR)/integrator.cpp $(LIBDIR)/read_write.cpp $(LIBDIR)/SolverClassNoDrift.cpp
+LIBSOURCES=$(LIBDIR)/CppInterfaceClass.cpp $(LIBDIR)/SolverClass.cpp $(LIBDIR)/PSRClass.cpp $(LIBDIR)/FixedHeightModelClass.cpp $(LIBDIR)/constants.cpp $(LIBDIR)/functions.cpp $(LIBDIR)/integrator.cpp $(LIBDIR)/read_write.cpp $(LIBDIR)/SolverClassNoDelta.cpp
 BINDINGSOURCES=$(BINDINGDIR)/interface_class_binding.cpp 
 LIBOBJECTS=$(LIBSOURCES:$(LIBDIR)/%.cpp=$(OBJDIR)/%.o)
 SRCOBJECTS=$(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
@@ -28,7 +28,7 @@ main_mpi: $(SOURCES_MPI) $(EXECUTABLE_MPI)
 main_test: $(SOURCES_TEST) $(EXECUTABLE_TEST)
 
 whateverittakes: $(BINDINGSOURCES) $(LIBSOURCES)
-	$(CC) $(CFLAGS) -shared -fPIC $$(python3 -m pybind11 --includes) $(BINDINGSOURCES) $(LIBSOURCES) -o bin/cpp_interface$$(python3-config --extension-suffix)
+	$(CC) $(CFLAGS) -shared -fPIC $$(python3 -m pybind11 --includes) $(BINDINGSOURCES) $(LIBSOURCES) -o bin/loki_python_binding$$(python3-config --extension-suffix)
 
 lib: $(LIBSOURCES)
 	$(CC) $(CFLAGS) -shared -fPIC $(LIBSOURCES) -o bin/libmylib.so

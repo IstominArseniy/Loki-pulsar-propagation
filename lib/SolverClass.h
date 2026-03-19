@@ -75,6 +75,11 @@ class FixedHeightSolver{
     /// @param l distnace along the ray
     /// @return BetaB angle in radians
     double BetaB (double l);
+    
+    /// @brief equvivalent of BetB + delta (theoretically)
+    /// @param l distnace along the ray
+    /// @return BetaB + delta angle in radians
+    double BetaBmod (double l);
 
     /// @param l distance alnog the ray
     /// @return Q parameter from Kravtsov-Orlov equations

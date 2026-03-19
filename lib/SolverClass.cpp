@@ -107,6 +107,7 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
 
 
 double FixedHeightSolver::find_initial_point(bool use_binary_search) {
+  // std::cout << phi_*180/3.14 << " " << theta_kb(2000) *180 / 3.14 << " " << vUdr(2000)[0] << " " << vUdr(2000)[1] << " " << vUdr(2000)[0] * vUdr(2000)[0] + vUdr(2000)[1] * vUdr(2000)[1] << " " << delta(2000)*180/3.14 << std::endl;
   double freq0 = 0.1;
   if(use_binary_search){ // binary search
     double n_iter=0;
@@ -134,6 +135,7 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
     while(std::abs(Lambda_derivative(cr_l + step) / std::pow(Lambda(cr_l+step), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs) < freq0){
       cr_l += step;
     }
+    // std::cout << omegaP(0)*omegaP(0) / PSR_.omega_obs/PSR_.omega_obs / model_.gamma0/model_.gamma0/model_.gamma0 << " "; 
     return cr_l;
   }
 }
@@ -151,7 +153,7 @@ void FixedHeightSolver::write_params_on_ray(std::string log_path)
     double l = 0;
     double dl = 2;
     while (l <= 1.5 * PSR_.RLC){
-        param_stream << l << ", " << Lambda(l) << ", " << delta(l) << ", " << BetaB(l) << ", " << vUdr(l)(0) << ", " << vUdr(l)(1) << ", " << theta_kb(l) << ", " << x_pc(l) << ", " << Q(l) << std::endl;
+        param_stream << l << ", " << Lambda(l) << ", " << delta(l) << ", " << BetaB(l) << ", " << vUdr(l)(0) << ", " << vUdr(l)(1) << ", " << theta_kb(l) << ", " << x_pc(l) << ", " << Q(l) << ", " << BetaBmod(l) << std::endl;
         l += dl;
     }
 }
@@ -318,9 +320,9 @@ double FixedHeightSolver::delta (double l) {
   double sinth = std::sin(theta_kb(l));
   double costh = std::cos(theta_kb(l));
   // std::cout << phi_ * 180 /constants::PI << " " << -vUdr(0) (1) << " " << -vUdr(0) (0) << " " << std::atan2(-std::cos(theta_kb(0))*vUdr(0) (1), std::sin(theta_kb(0))- vUdr(0) (0)) << std::endl;
-  // return std::atan2(-costh * vy, sinth-vx);
+  return std::atan2(-costh * vy, sinth-vx);
   // return 0.5 * std::atan(-2*vy*costh*(sinth-vx) / ((sinth-vx)*(sinth-vx) - costh*costh*vy*vy));
-  return 0.5 * std::atan2(-2*vy*costh*(sinth-vx), ((sinth-vx)*(sinth-vx) - costh*costh*vy*vy));
+  // return 0.5 * std::atan2(-2*vy*costh*(sinth-vx), ((sinth-vx)*(sinth-vx) - costh*costh*vy*vy));
 }
 
 double FixedHeightSolver::BetaB (double l) {
@@ -331,9 +333,24 @@ double FixedHeightSolver::BetaB (double l) {
   if (l < 1e-1){
     l = 1e-1;
   }
-  double bx = XX.dot(vB(l));
-  double by = YY.dot(vB(l));
+  double bx = XX.dot(vb(l));
+  double by = YY.dot(vb(l));
   return std::atan2(by, bx);  // ??? was atan (by/bx)
+}
+
+double FixedHeightSolver::BetaBmod (double l) {
+  Vector3d XX;
+  Vector3d YY;
+  XX = (PSR_.Omega_vec - PSR_.observer_vec.dot(PSR_.Omega_vec) * PSR_.observer_vec).normalized();
+  YY = PSR_.observer_vec.cross(XX);
+  if (l < 1e-1){
+    l = 1e-1;
+  }
+  Vector3d PAvec;
+  PAvec = vb(l) - PSR_.observer_vec.cross(vb(l).cross(vBetaR(l)));
+  double PAx = XX.dot(PAvec);
+  double PAy = YY.dot(PAvec);
+  return std::atan2(PAy, PAx);  // ??? was atan (by/bx)
 }
 
 double FixedHeightSolver::Q (double l) {

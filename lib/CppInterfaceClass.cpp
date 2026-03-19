@@ -8,7 +8,7 @@
 #include "functions.h"
 #include "CppInterfaceClass.h"
 #include "SolverClass.h"
-#include "SolverClassNoDrift.h"
+#include "SolverClassNoDelta.h"
 #include "read_write.h"
 
 
@@ -58,7 +58,7 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, boo
     std::vector<double> theta_final;
     double I;
     if(no_drift){
-        FixedHeightSolverNoDrift solver(phi, mode, PSR_, model_);
+        FixedHeightSolverNoDelta solver(phi, mode, PSR_, model_);
         double l1 = solver.find_initial_point(false);
         double l2 = std::min(2.5 * get_R_escape(), 2*PSR_.RLC);
         solver.write_params_on_ray(log_path_);
@@ -73,6 +73,7 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, boo
     else{
         FixedHeightSolver solver(phi, mode, PSR_, model_);
         double l1 = solver.find_initial_point(false);
+        std::cout << phi << " " << l1 << std::endl;
         double l2 = std::min(2.5 * get_R_escape(), 2*PSR_.RLC);
         solver.write_params_on_ray(log_path_);
         std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);

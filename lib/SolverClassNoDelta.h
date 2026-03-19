@@ -7,7 +7,7 @@
 
 using Eigen::Vector3d;
 
-class FixedHeightSolverNoDrift{
+class FixedHeightSolverNoDelta{
     private:
     double phi_;
     double mode_;
@@ -17,7 +17,7 @@ class FixedHeightSolverNoDrift{
     FixedHeightModel model_;
 
     public:
-    FixedHeightSolverNoDrift(double phi_deg, int mode, ObservedRadioPulsar &PSR, FixedHeightModel &model);
+    FixedHeightSolverNoDelta(double phi_deg, int mode, ObservedRadioPulsar &PSR, FixedHeightModel &model);
 
     /// @brief solve Kravtsov-Orlov equations 
     /// @param theta_inital inital values for comlex polarisation angle (as length 2 vector)
@@ -32,6 +32,12 @@ class FixedHeightSolverNoDrift{
     /// @param dydx derivative by reference
     /// @param l independent variable by reference
     void RHS_for_boost(const std::vector<double>& f, std::vector<double> &dydx, double l);
+
+    /// @brief find approximate solution for Kravtsov-Orlov equations in dense plasma regions 
+    /// @param theta_inital inital values for comlex polarisation angle (as length 2 vector)
+    /// @param mode emission mode (1 - Omode, 0 - Xmode)
+    /// @return theta_final -  final complex polarisation angle (as length 2 vector)
+    std::vector<double> find_approximate_KO_solution(std::vector<double> theta_initial);
 
     /// @brief find approximate solution for Kravtsov-Orlov equations in dense plasma regions 
     /// @param l - distance from the star. Theta_inintal is determined by emission mode
@@ -59,10 +65,20 @@ class FixedHeightSolverNoDrift{
 
 
     // --------------------------Main Kravtsov-Orlov equation functions------------------------------------
+
+    /// @brief additional phase parameter related to ExB drift 
+    /// @param l distance alnog the ray 
+    /// @return delta phase 
+    double delta (double l);
+
     /// @brief polar angle of magnetic filed projected to the plane perpendicular to the ray
     /// @param l distnace along the ray
     /// @return BetaB angle in radians
     double BetaB (double l);
+
+    /// @param l distance alnog the ray
+    /// @return Q parameter from Kravtsov-Orlov equations
+    double Q (double l);
 
     /// @param l distance along the ray
     /// @return Lambda parameter form Kravtsov-Orlov equations
@@ -102,6 +118,15 @@ class FixedHeightSolverNoDrift{
     /// @return Omega_vec corss r_vec 
     Vector3d vBetaR (double l);
 
+    /// @brief ExB drift particle velocity component (V = V_|| * b_vec + Udr)
+    /// @param l distance along the ray
+    /// @return drift velocity Eigen 3d Vector  
+    Vector3d vUdr (double l);
+
+    /// @param l distance along the ray
+    /// @return drift velocity gamma factor
+    double gammaU (double l);
+
     /// @param l distance along the ray
     /// @return distance from the field line footpoint to the polar cap center
     /// @note Only for dipolar magnetic field!!!
@@ -134,15 +159,32 @@ class FixedHeightSolverNoDrift{
     /// @return Local plasma frequency (s^-1)
     double omegaP (double l);
 
+    /// @brief ...
+    /// @param l 
+    /// @return ...
+    bool stop_condition(double l);
+
+
+    double Q_denominator(double l);
+
+
+
     /// @brief polar angle of magnetic filed projected to the plane perpendicular to the ray
     /// @param l distnace along the ray
     /// @return Derivative of BetaB angle in radians along the ray
     double BetaB_derivative (double l);
 
+    /// @param l distance alnog the ray
+    /// @return Derivative of Q parameter from Kravtsov-Orlov equations along the ray
+    double Q_derivative (double l);
+
     /// @param l distance along the ray
     /// @return Derivative of Lambda parameter form Kravtsov-Orlov equations along the ray
     double Lambda_derivative (double l);
 
+    /// @param l distance along the ray
+    /// @return Derivative of delta parameter form Kravtsov-Orlov equations along the ray
+    double delta_derivative(double l);
 
     // -----------------------Cyclotron Absorption------------------------
 
