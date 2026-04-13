@@ -171,6 +171,14 @@ Vector3d FixedHeightSolver::vMoment (double l) {
   return mvec;
 }
 
+Vector3d FixedHeightSolver::beta(Vector3d r, Vector3d m){
+  Vector3d beta_vec;
+  Vector3d Omega_corss_R = PSR_.Rs / constants::c * PSR_.Omega_vec.cross(r);
+  Vector3d b_normalized = model_.Bfield(r, m).normalized();
+  double kappa = -Omega_corss_R.dot(b_normalized) + std::sqrt(std::pow(Omega_corss_R.dot(b_normalized), 2) - Omega_corss_R.dot(Omega_corss_R) + 1);
+  return kappa*b_normalized + Omega_corss_R;
+}
+
 std::pair<double, double> FixedHeightSolver::find_emission_point()
 { 
   double theta_em = PSR_.chi;
@@ -181,12 +189,15 @@ std::pair<double, double> FixedHeightSolver::find_emission_point()
   auto func1 = [&](double theta, double phi){
     Vector3d vPoint;
     vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
-    return (model_.Bfield(vPoint, vM)).cross(target_vector)(0);
+    // return (model_.Bfield(vPoint, vM)).cross(target_vector)(0);
+    return (beta(vPoint, vM)).cross(target_vector)(0);
   };
   auto func2 = [&](double theta, double phi){
     Vector3d vPoint;
     vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
-    return (model_.Bfield(vPoint, vM)).cross(target_vector)(1);
+    // return (model_.Bfield(vPoint, vM)).cross(target_vector)(1);
+    return (beta(vPoint, vM)).cross(target_vector)(1);
+
   };
   for(int i = 0; i < 15; i ++) {
       double f1x = DX(func1, theta_em, phi_em);
@@ -236,6 +247,14 @@ Vector3d FixedHeightSolver::vBetaR (double l) {
   return PSR_.Rs / constants::c * PSR_.Omega_vec.cross(vR(l)); 
 }
 
+Vector3d FixedHeightSolver::vBeta(double l){
+  Vector3d BetaR = vBetaR(l);
+  double BetaR_paral = BetaR.dot(vb(l));
+  double BetaR_perp = std::sqrt(BetaR.dot(BetaR) - BetaR_paral*BetaR_paral);
+  double kappa = std::sqrt(1 - BetaR_perp*BetaR_perp) - BetaR_paral;
+  return BetaR + kappa * vb(l);
+}
+
 Vector3d FixedHeightSolver::vUdr (double l) {  
   Vector3d vn;
   Vector3d vm;
@@ -271,7 +290,7 @@ double FixedHeightSolver::gammaU (double l) {
 }
 
 double FixedHeightSolver::x_pc(double l){
-  return std::abs(std::sin(psi_m(l))) * std::sqrt(PSR_.RLC / vR(l).norm());
+  return std::abs(std::sin((psi_m(l)))) * std::sqrt(PSR_.RLC / vR(l).norm());
 }
 
 double FixedHeightSolver::phi_pc(double l){
@@ -347,7 +366,8 @@ double FixedHeightSolver::BetaBmod (double l) {
     l = 1e-1;
   }
   Vector3d PAvec;
-  PAvec = vb(l) - PSR_.observer_vec.cross(vb(l).cross(vBetaR(l)));
+  // PAvec = vb(l) - PSR_.observer_vec.cross(vb(l).cross(vBetaR(l)));
+  PAvec = PSR_.observer_vec.cross((PSR_.observer_vec - vBeta(l)).cross(vb(l)));
   double PAx = XX.dot(PAvec);
   double PAy = YY.dot(PAvec);
   return std::atan2(PAy, PAx);  // ??? was atan (by/bx)

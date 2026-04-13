@@ -95,6 +95,11 @@ class FixedHeightSolver{
     /// @return magnetic moment unit vector (Egien 3d Vector)
     Vector3d vMoment (double l);
 
+    /// @param r radius vector
+    /// @param m magnetic moment
+    /// @return velocity (beta) of the particle, taking drift into account
+    Vector3d beta(Vector3d r, Vector3d m);
+
     /// @brief finds spherical angular coordinates of the emission point (on the distance Rem) using ...
     /// @return pair theta_em, phi_em
     std::pair<double, double> find_emission_point();
@@ -122,8 +127,12 @@ class FixedHeightSolver{
     /// @param l distance along the ray
     /// @return Omega_vec corss r_vec 
     Vector3d vBetaR (double l);
+    
+    /// @param l distance along the ray
+    /// @return beta velocity vector
+    Vector3d vBeta(double l);
 
-    /// @brief ExB drift particle velocity component (V = V_|| * b_vec + Udr)
+    /// @brief ExB drift particle velocity component (V = V_|| * b_vec + Udr); z component is the velocity along the magnetic field
     /// @param l distance along the ray
     /// @return drift velocity Eigen 3d Vector  
     Vector3d vUdr (double l);

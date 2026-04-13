@@ -1,6 +1,6 @@
 CC=g++ #mpic++
 CCMPI=mpic++
-CFLAGS=-std=c++17 -I /usr/local/include/eigen
+CFLAGS=-std=c++17 -O3 -I /usr/local/include/eigen
 OBJDIR=bin/objs
 LIBDIR=lib
 SRCDIR=src
