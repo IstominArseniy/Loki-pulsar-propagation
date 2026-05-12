@@ -8,7 +8,6 @@
 #include "functions.h"
 #include "CppInterfaceClass.h"
 #include "SolverClass.h"
-#include "SolverClassNoDelta.h"
 #include "read_write.h"
 
 
@@ -53,36 +52,23 @@ void CppInterface::init_from_file(std::string filename)
 
 
 
-std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, bool with_absorption, bool no_drift)
+std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, bool with_absorption)
 {
     std::vector<double> theta_final;
     double I;
-    if(no_drift){
-        FixedHeightSolverNoDelta solver(phi, mode, PSR_, model_);
-        double l1 = solver.find_initial_point(false);
-        double l2 = std::min(2.5 * get_R_escape(), 2*PSR_.RLC);
-        solver.write_params_on_ray(log_path_);
-        std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);
-        theta_final = solver.solve_KO_equations(theta_init, l1, l2, log_path_);
-        I = solver.find_intensity();
-        if(with_absorption==true){
-            double tau = solver.get_tau();
-            I *= std::exp(-tau);
-        }
-    }
-    else{
-        FixedHeightSolver solver(phi, mode, PSR_, model_);
-        double l1 = solver.find_initial_point(false);
-        std::cout << phi << " " << l1 << std::endl;
-        double l2 = std::min(2.5 * get_R_escape(), 2*PSR_.RLC);
-        solver.write_params_on_ray(log_path_);
-        std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);
-        theta_final = solver.solve_KO_equations(theta_init, l1, l2, log_path_);
-        I = solver.find_intensity();
-        if(with_absorption==true){
-            double tau = solver.get_tau();
-            I *= std::exp(-tau);
-        }
+    FixedHeightSolver solver(phi, mode, PSR_, model_);
+    double l1 = solver.find_initial_point(true);
+    // double l1 = 0;
+    double l2 = std::max(2.5 * get_R_escape(), 2*PSR_.RLC);
+    solver.write_params_on_ray(log_path_);
+    std::vector<double> theta_init = solver.find_approximate_KO_solution(l1);
+    std::cout << phi << " " << l1 << std::endl;
+    theta_final = solver.solve_KO_equations(theta_init, l1, l2, log_path_);
+    // theta_final = theta_init;
+    I = solver.find_intensity();
+    if(with_absorption==true){
+        double tau = solver.get_tau();
+        I *= std::exp(-tau);
     }
     double V = I * std::tanh(2.0 * theta_final[1]);
     double PA = theta_final[0] * 180.0 / constants::PI;
@@ -106,11 +92,11 @@ double CppInterface::find_I(double phi, int mode, bool with_absorption)
     return I;
 }
 
-std::vector<std::map<std::string, double> > CppInterface::calculate_profile(double phi1, double phi2, double phi_step, int mode, bool with_absorption, bool no_drift){
+std::vector<std::map<std::string, double> > CppInterface::calculate_profile(double phi1, double phi2, double phi_step, int mode, bool with_absorption){
     std::vector<std::map<std::string, double> > profile;
     double phi_tmp = phi1;
     while(phi_tmp < phi2){
-        auto result = find_ILVPA(phi_tmp, mode, with_absorption, no_drift);
+        auto result = find_ILVPA(phi_tmp, mode, with_absorption);
         profile.push_back(result);
         phi_tmp += phi_step;
     }

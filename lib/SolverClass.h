@@ -75,8 +75,8 @@ class FixedHeightSolver{
     /// @param l distnace along the ray
     /// @return BetaB angle in radians
     double BetaB (double l);
-    
-    /// @brief equvivalent of BetB + delta (theoretically)
+
+    /// @brief equvivalent of BetaB + delta 
     /// @param l distnace along the ray
     /// @return BetaB + delta angle in radians
     double BetaBmod (double l);
@@ -94,12 +94,11 @@ class FixedHeightSolver{
     /// @param l distance along the ray
     /// @return magnetic moment unit vector (Egien 3d Vector)
     Vector3d vMoment (double l);
-
-    /// @param r radius vector
-    /// @param m magnetic moment
-    /// @return velocity (beta) of the particle, taking drift into account
+    
+    /// @param r - radius vector
+    /// @param m - magnetic moment unit vector
+    /// @return particles velocity vector
     Vector3d beta(Vector3d r, Vector3d m);
-
     /// @brief finds spherical angular coordinates of the emission point (on the distance Rem) using ...
     /// @return pair theta_em, phi_em
     std::pair<double, double> find_emission_point();
@@ -127,12 +126,8 @@ class FixedHeightSolver{
     /// @param l distance along the ray
     /// @return Omega_vec corss r_vec 
     Vector3d vBetaR (double l);
-    
-    /// @param l distance along the ray
-    /// @return beta velocity vector
-    Vector3d vBeta(double l);
 
-    /// @brief ExB drift particle velocity component (V = V_|| * b_vec + Udr); z component is the velocity along the magnetic field
+    /// @brief ExB drift particle velocity component (V = V_|| * b_vec + Udr)
     /// @param l distance along the ray
     /// @return drift velocity Eigen 3d Vector  
     Vector3d vUdr (double l);
@@ -199,6 +194,10 @@ class FixedHeightSolver{
     /// @param l distance along the ray
     /// @return Derivative of delta parameter form Kravtsov-Orlov equations along the ray
     double delta_derivative(double l);
+
+    /// @param l distance along the ray
+    /// @return Derivative of beta+delta parameter form Kravtsov-Orlov equations along the ray
+    double BetaBmod_derivative(double l);
 
     // -----------------------Cyclotron Absorption------------------------
 
