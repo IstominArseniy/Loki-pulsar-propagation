@@ -91,7 +91,7 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
   double coefficient = constants::c / PSR_.Rs / PSR_.omega_obs;
   double delta_theta = - coefficient / Lambda(starting_point) * BetaBmod_derivative(starting_point) * std::sin(Lambda_integral / coefficient);
   double theta2 = -coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l) + 
-  coefficient / Lambda(starting_point) * BetaBmod_derivative(0) * std::cos(Lambda_integral / coefficient);
+  coefficient / Lambda(starting_point) * BetaBmod_derivative(starting_point) * std::cos(Lambda_integral / coefficient);
   if (mode_ == 0){
     theta_final[0] = constants::PI / 2 + BetaBmod(l) + delta_theta;
     theta_final[1] = -theta2;
@@ -115,7 +115,7 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
     double l_left = 0, l_right = PSR_.RLC / 10, l_cur;   
     l_cur = (l_left + l_right) / 2;
 
-    while(std::abs(std::abs(Lambda_derivative(l_cur) / std::pow(Lambda(l_cur), 2) * 2 * constants::c  / PSR_.Rs/ PSR_.omega_obs)  - freq0) > 0.001 && n_iter < 30){
+    while(std::abs(std::abs(Lambda_derivative(l_cur) / std::pow(Lambda(l_cur), 2) * 2 * constants::c  / PSR_.Rs/ PSR_.omega_obs)  - freq0) > 0.01 && n_iter < 30){
       l_cur = (l_left + l_right) / 2;
       n_iter++;
       if(std::abs(Lambda_derivative(l_cur) / std::pow(Lambda(l_cur), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs) > freq0){
@@ -353,8 +353,8 @@ double FixedHeightSolver::BetaBmod (double l) {
   Vector3d YY;
   XX = (PSR_.Omega_vec - PSR_.observer_vec.dot(PSR_.Omega_vec) * PSR_.observer_vec).normalized();
   YY = PSR_.observer_vec.cross(XX);
-  if (l < 1){
-    l = 1;
+  if (l < 1e-1){
+    l = 1e-1;
   }
   // std::cout << vBetaR(1).norm()<< " " << ANGLE(vBetaR(1), vb(1)) << std::endl;
   Vector3d PAvec;
