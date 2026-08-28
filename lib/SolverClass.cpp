@@ -100,6 +100,15 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
     theta_final[0] = BetaBmod(l) + delta_theta;
     theta_final[1] = theta2;
   }
+  // if (mode_ == 0){
+  //   theta_final[0] = constants::PI / 2 + BetaBmod(l);
+  //   // theta_final[1] = 0.5*(-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
+  //   theta_final[1] = -(-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
+  // }
+  // else{
+  //   theta_final[0] = BetaBmod(l);
+  //   theta_final[1] = (-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
+  // }
   return theta_final;
 }
 
@@ -149,7 +158,18 @@ void FixedHeightSolver::write_params_on_ray(std::string log_path)
     double l = 0;
     double dl = 2;
     while (l <= 1.5 * PSR_.RLC){
-        param_stream << l << ", " << Lambda(l) << ", " << delta(l) << ", " << BetaB(l) << ", " << vUdr(l)(0) << ", " << vUdr(l)(1) << ", " << theta_kb(l) << ", " << x_pc(l) << ", " << Q(l) << ", " << BetaBmod(l) << std::endl;
+        param_stream <<"l:" << l << ", ";
+        param_stream <<"Lambda:" << Lambda(l) << ", ";
+        param_stream <<"delta:" << delta(l) << ", "; 
+        param_stream <<"beta:" << BetaB(l) << ", ";
+        param_stream <<"vUdr_x:" << vUdr(l)(0) << ", ";
+        param_stream <<"vUdr_y:" << vUdr(l)(1) << ", ";
+        param_stream <<"theta_kb:" << theta_kb(l) << ", ";
+        param_stream <<"x_pc:" << x_pc(l) << ", ";
+        param_stream <<"Q:" << Q(l) << ", ";
+        param_stream <<"beta_eff:"<< BetaBmod(l) << ", " ;
+        param_stream <<"R/2:"<< -BetaBmod_derivative(l) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(l) - 1/2/Q(l)<<", ";
+        param_stream << std::endl;
         l += dl;
     }
 }
