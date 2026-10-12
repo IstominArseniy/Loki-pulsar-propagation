@@ -35,7 +35,9 @@ std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> th
     if(stop_condition(it->second)){ // stop integration if Udr > c(?!)
       break;
     }
-    log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaBmod (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) << ", " << vUdr(it->second)(0) << ", " << vUdr(it->second)(1) << std::endl;
+    // log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaBmod (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) << ", " << vUdr(it->second)(0) << ", " << vUdr(it->second)(1) << std::endl;
+    log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << BetaBmod (it->second) << ", " << -BetaBmod_derivative(it->second) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(it->second) - 1/2/Q(it->second) << std::endl;
+
     it++; // make integration step
     }
     log_stream.close();
@@ -92,23 +94,23 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
   double delta_theta = - coefficient / Lambda(starting_point) * BetaBmod_derivative(starting_point) * std::sin(Lambda_integral / coefficient);
   double theta2 = -coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l) + 
   coefficient / Lambda(starting_point) * BetaBmod_derivative(starting_point) * std::cos(Lambda_integral / coefficient);
-  if (mode_ == 0){
-    theta_final[0] = constants::PI / 2 + BetaBmod(l) + delta_theta;
-    theta_final[1] = -theta2;
-  }
-  else{
-    theta_final[0] = BetaBmod(l) + delta_theta;
-    theta_final[1] = theta2;
-  }
   // if (mode_ == 0){
-  //   theta_final[0] = constants::PI / 2 + BetaBmod(l);
-  //   // theta_final[1] = 0.5*(-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
-  //   theta_final[1] = -(-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
+  //   theta_final[0] = constants::PI / 2 + BetaBmod(l) + delta_theta;
+  //   theta_final[1] = -theta2;
   // }
   // else{
-  //   theta_final[0] = BetaBmod(l);
-  //   theta_final[1] = (-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
+  //   theta_final[0] = BetaBmod(l) + delta_theta;
+  //   theta_final[1] = theta2;
   // }
+  if (mode_ == 0){
+    theta_final[0] = constants::PI / 2 + BetaBmod(l);
+    // theta_final[1] = 0.5*(-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
+    theta_final[1] = (-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
+  }
+  else{
+    theta_final[0] = BetaBmod(l);
+    theta_final[1] = -(-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
+  }
   return theta_final;
 }
 
@@ -154,21 +156,26 @@ void FixedHeightSolver::write_params_on_ray(std::string log_path)
 {
     if (log_path == "")
       return;
-    std::ofstream param_stream(log_path + "/prop_params_" + std::to_string(std::round(100 * phi_*180/constants::PI)/100));
+    std::ofstream param_stream(log_path + "/prop_params_" + std::to_string(std::round(100 * phi_*180/constants::PI)/100) + ".csv");
     double l = 0;
     double dl = 2;
+    param_stream << "l," << "Lambda," << "delta," << "beta," << "vUdr_x," << "vUdr_y," << "theta_kb," << "x_pc," << "Q," << "beta_eff," << "R/Lambda/2," 
+    << "beta_der/Lambda," << "geom_condition," << "p2" << std::endl; 
     while (l <= 1.5 * PSR_.RLC){
-        param_stream <<"l:" << l << ", ";
-        param_stream <<"Lambda:" << Lambda(l) << ", ";
-        param_stream <<"delta:" << delta(l) << ", "; 
-        param_stream <<"beta:" << BetaB(l) << ", ";
-        param_stream <<"vUdr_x:" << vUdr(l)(0) << ", ";
-        param_stream <<"vUdr_y:" << vUdr(l)(1) << ", ";
-        param_stream <<"theta_kb:" << theta_kb(l) << ", ";
-        param_stream <<"x_pc:" << x_pc(l) << ", ";
-        param_stream <<"Q:" << Q(l) << ", ";
-        param_stream <<"beta_eff:"<< BetaBmod(l) << ", " ;
-        param_stream <<"R/2:"<< -BetaBmod_derivative(l) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(l) - 1/2/Q(l)<<", ";
+        param_stream << l << ",";
+        param_stream << Lambda(l) << ",";
+        param_stream << delta(l) << ","; 
+        param_stream << BetaB(l) << ",";
+        param_stream << vUdr(l)(0) << ",";
+        param_stream << vUdr(l)(1) << ",";
+        param_stream << theta_kb(l) << ",";
+        param_stream << x_pc(l) << ",";
+        param_stream << Q(l) << ",";
+        param_stream << BetaBmod(l) << ", " ;
+        param_stream << -BetaBmod_derivative(l) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(l) - 1/2/Q(l)<<",";
+        param_stream << -BetaBmod_derivative(l) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(l)<<",";
+        param_stream << std::abs(Lambda_derivative(l) / std::pow(Lambda(l), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs)<<",";
+        param_stream << std::pow((PSR_.observer_vec.cross(vb(l).cross(PSR_.observer_vec - beta(vR(l), vMoment(l))))).norm(), 2);
         param_stream << std::endl;
         l += dl;
     }
@@ -433,7 +440,14 @@ double FixedHeightSolver::delta_derivative(double l)
 double FixedHeightSolver::BetaBmod_derivative(double l)
 {
   double dl = 1;
-  return (BetaBmod(l + dl) - BetaBmod(l)) / dl;
+  double sinBeta1 = std::sin(BetaBmod(l));
+  double sinBeta2 = std::sin(BetaBmod(l+dl));
+  double cosBeta1 = std::cos(BetaBmod(l));
+  double cosBeta2 = std::cos(BetaBmod(l+dl));
+  double sin_der = (sinBeta2 - sinBeta1) / dl;
+  double cos_der = (cosBeta2 - cosBeta1) / dl;
+  return std::sqrt(sin_der*sin_der + cos_der*cos_der);
+  // return (BetaBmod(l + dl) - BetaBmod(l)) / dl;
 }
 
 // -----------------------Cyclotron Absorption------------------------

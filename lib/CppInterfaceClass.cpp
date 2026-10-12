@@ -57,7 +57,7 @@ std::map<std::string, double> CppInterface::find_ILVPA(double phi, int mode, boo
     std::vector<double> theta_final;
     double I;
     FixedHeightSolver solver(phi, mode, PSR_, model_);
-    double l1 = solver.find_initial_point(true);
+    double l1 = solver.find_initial_point(false);
     // double l1 = 1;
 
     double l2 = std::max(2.5 * get_R_escape(), 2*PSR_.RLC);
