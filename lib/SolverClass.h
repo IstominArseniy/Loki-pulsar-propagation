@@ -12,8 +12,11 @@ class FixedHeightSolver{
     double phi_;
     double mode_;
     ObservedRadioPulsar PSR_;
+    double l_refraction;
     double theta_em_;
     double phi_em_;
+    double theta_lin;
+    double phi_lin;
     FixedHeightModel model_;
 
     public:
@@ -32,6 +35,8 @@ class FixedHeightSolver{
     /// @param dydx derivative by reference
     /// @param l independent variable by reference
     void RHS_for_boost(const std::vector<double>& f, std::vector<double> &dydx, double l);
+
+    void refraction_RHS_for_boost(const std::vector<double>& f, std::vector<double>& dfdl, double l);
 
     /// @brief find approximate solution for Kravtsov-Orlov equations in dense plasma regions 
     /// @param theta_inital inital values for comlex polarisation angle (as length 2 vector)
@@ -99,6 +104,18 @@ class FixedHeightSolver{
     /// @param m - magnetic moment unit vector
     /// @return particles velocity vector
     Vector3d beta(Vector3d r, Vector3d m);
+
+    Vector3d translate_k(Vector3d r, Vector3d k0);
+
+    /// @brief Evolve r and k vectors, solving geometrial optics equations
+    /// @param r0 initial wave r
+    /// @param k0 initial wave k
+    /// @param m magnetic moment unit vector
+    /// @return pair of final (r, k) vector
+    std::pair<Vector3d, Vector3d>  translate_rk(Vector3d r0, Vector3d k0, Vector3d m);
+
+
+
     /// @brief finds spherical angular coordinates of the emission point (on the distance Rem) using ...
     /// @return pair theta_em, phi_em
     std::pair<double, double> find_emission_point();
