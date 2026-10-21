@@ -16,12 +16,11 @@ FixedHeightSolver::FixedHeightSolver(double phi_deg, int mode, ObservedRadioPuls
   PSR_ = PSR;
   phi_ = phi_deg * constants::PI / 180;
   mode_ = mode;
-  std::pair<double, double> emission_coords = find_emission_point();
-  l_refraction = 15; // distance, after which the propagation of the O mode can be considered as rectilinear
-  theta_em_ = emission_coords.first;
-  phi_em_ = emission_coords.second;
-  theta_lin = theta_em_;
-  phi_lin = phi_em_;
+  l_ref = 15; // distance, after which the propagation of the O mode can be considered as rectilinear
+  Vector3d r_em = find_emission_point();
+  Vector3d k_em = beta(r_em, vMoment(0));
+  Vector3d r_start, k_start; 
+  r_start, k_start = translate_rk(r_em, k_em, vMoment(0)).first;
 }
 
 std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> theta_initial, double l1, double l2, std::string log_path)
@@ -99,17 +98,6 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
   double starting_point=0;
   Lambda_integral = integrate([this](double l){return this->Lambda(l);}, starting_point, l);
   double coefficient = constants::c / PSR_.Rs / PSR_.omega_obs;
-  // double delta_theta = - coefficient / Lambda(starting_point) * BetaBmod_derivative(starting_point) * std::sin(Lambda_integral / coefficient);
-  // double theta2 = -coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l) + 
-  // coefficient / Lambda(starting_point) * BetaBmod_derivative(starting_point) * std::cos(Lambda_integral / coefficient);
-  // if (mode_ == 0){
-  //   theta_final[0] = constants::PI / 2 + BetaBmod(l) + delta_theta;
-  //   theta_final[1] = -theta2;
-  // }
-  // else{
-  //   theta_final[0] = BetaBmod(l) + delta_theta;
-  //   theta_final[1] = theta2;
-  // }
   if (mode_ == 0){
     theta_final[0] = constants::PI / 2 + BetaBmod(l);
     theta_final[1] = (-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
@@ -156,7 +144,7 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
 
 double FixedHeightSolver::find_intensity()
 {
-    return gFunc(0);
+    return gFunc(0); // TODO: redo; incorrect in the case of refraction
 }
 
 void FixedHeightSolver::write_params_on_ray(std::string log_path)
@@ -195,8 +183,8 @@ Vector3d FixedHeightSolver::vMoment (double l) {
   Magnetic momentum unit vector
   */
   Vector3d mvec;
-  mvec(0) = std::sin(PSR_.chi) * std::cos(phi_ + l / PSR_.RLC);
-  mvec(1) = std::sin(PSR_.chi) * std::sin(phi_ + l / PSR_.RLC);
+  mvec(0) = std::sin(PSR_.chi) * std::cos(phi_ + (l+l_ref) / PSR_.RLC);
+  mvec(1) = std::sin(PSR_.chi) * std::sin(phi_ + (l+l_ref) / PSR_.RLC);
   mvec(2) = std::cos(PSR_.chi);
   return mvec;
 }
@@ -208,29 +196,6 @@ Vector3d FixedHeightSolver::beta(Vector3d r, Vector3d m){
   return kappa*b_normalized + Omega_corss_R;
 }
 
-Vector3d FixedHeightSolver::translate_k(Vector3d r, Vector3d k0){
-  double theta1 = std::acos(k0[2]);
-  double rho1 = std::sqrt(r[0]*r[0] + r[1]*r[1]);
-  std::vector<double> f_vec = {theta1, rho1};
-  double l_final=15;
-  //integration
-  double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-8;
-  auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
-  auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const vector<double>& f, vector<double> dfdl, double l){this->refraction_RHS_for_boost(f, dfdl, l);}, f_vec, 0, l_final, h_init); // make range for integration
-  auto it=ode_range.first;
-  while(it != ode_range.second){
-    it++;
-  }
-  double theta2, rho2;
-  theta2 = f_vec[0];
-  rho2 = f_vec[1];
-  Vector3d k;
-  k[0] = k0[0] / std::sqrt(k0[0]*k0[0] + k0[1]*k0[1]) * std::sin(theta2);
-  k[1] = k0[1] / std::sqrt(k0[0]*k0[0] + k0[1]*k0[1]) * std::sin(theta2); 
-  k[2] = std::cos(theta2);
-  // need to redo r(l) in any case
-  return k;
-}
 
 std::pair<Vector3d, Vector3d> FixedHeightSolver::translate_rk(Vector3d r0, Vector3d k0, Vector3d m){
   // using 1D approximation
@@ -240,7 +205,7 @@ std::pair<Vector3d, Vector3d> FixedHeightSolver::translate_rk(Vector3d r0, Vecto
   //--------------------------------------integration------------------------------------
   double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-8;
   auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
-  auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const vector<double>& f, vector<double> dfdl, double l){this->refraction_RHS_for_boost(f, dfdl, l);}, f_vec, 0, l_refraction, h_init); // make range for integration
+  auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const vector<double>& f, vector<double> dfdl, double l){this->refraction_RHS_for_boost(f, dfdl, l);}, f_vec, 0, l_ref, h_init); // make range for integration
   auto it=ode_range.first;
   while(it != ode_range.second){
     it++;
@@ -259,7 +224,7 @@ std::pair<Vector3d, Vector3d> FixedHeightSolver::translate_rk(Vector3d r0, Vecto
   return rk_pair;
 }
 
-std::pair<double, double> FixedHeightSolver::find_emission_point()
+Vector3d FixedHeightSolver::find_emission_point()
 { 
   double theta_em = PSR_.chi;
   double phi_em = phi_;
@@ -291,7 +256,9 @@ std::pair<double, double> FixedHeightSolver::find_emission_point()
       theta_em += dX;
       phi_em += dY;
   }
-  std::pair<double, double> em_point = {theta_em, phi_em};
+  Vector3d em_point = {model_.Rem * std::sin(theta_em) * std::cos(phi_em), 
+    model_.Rem * std::sin(theta_em) * std::sin(phi_em), 
+    model_.Rem * std::cos(theta_em)};
   return em_point;
 }
 
@@ -300,11 +267,7 @@ Vector3d FixedHeightSolver::vR (double l) {
   Propagation radius vector
   Here strightforward ray propagation is implemented (but more complex cases of refraction can be considere here too) 
   */
-  Vector3d n0(3); // unit vector along the ray
-  n0(0) = std::sin(theta_lin) * std::cos(phi_lin); 
-  n0(1) = std::sin(theta_lin) * std::sin(phi_lin);
-  n0(2) = std::cos(theta_lin);
-  return model_.Rem * n0 + l * PSR_.observer_vec;
+  return r_start + l * k_start;
 } 
 
 double FixedHeightSolver::psi_m (double l) {

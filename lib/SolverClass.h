@@ -12,11 +12,11 @@ class FixedHeightSolver{
     double phi_;
     double mode_;
     ObservedRadioPulsar PSR_;
-    double l_refraction;
-    double theta_em_;
-    double phi_em_;
-    double theta_lin;
-    double phi_lin;
+    double l_ref;
+    Vector3d r_em;
+    Vector3d k_em;
+    Vector3d r_start;
+    Vector3d k_start;
     FixedHeightModel model_;
 
     public:
@@ -105,8 +105,6 @@ class FixedHeightSolver{
     /// @return particles velocity vector
     Vector3d beta(Vector3d r, Vector3d m);
 
-    Vector3d translate_k(Vector3d r, Vector3d k0);
-
     /// @brief Evolve r and k vectors, solving geometrial optics equations
     /// @param r0 initial wave r
     /// @param k0 initial wave k
@@ -117,8 +115,8 @@ class FixedHeightSolver{
 
 
     /// @brief finds spherical angular coordinates of the emission point (on the distance Rem) using ...
-    /// @return pair theta_em, phi_em
-    std::pair<double, double> find_emission_point();
+    /// @return 3d Vector to the emission point
+    Vector3d find_emission_point();
 
     /// @param l distance along the ray
     /// @return vector to the point on the ray as Eigen 3d Vector
