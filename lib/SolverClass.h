@@ -117,66 +117,85 @@ class FixedHeightSolver{
     /// @return vector to the point on the ray as Eigen 3d Vector
     Vector3d vR (double l);
 
-    /// @param l distance along the ray
+    Vector3d vK(double l);
+
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
     /// @return angle between magnetic axis and r vector
-    double psi_m (double l);
+    double psi_m(Vector3d vR, Vector3d vM);
 
-    /// @param l distance along the ray
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
     /// @return Magnetic field vector as Eigen 3d Vector
-    Vector3d vB (double l);
+    Vector3d vB(Vector3d vR, Vector3d vM);
 
-    /// @param l distance along the ray
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
     /// @return normalized magnetic field vector
-    Vector3d vb (double l);
+    Vector3d vb(Vector3d vR, Vector3d vM);
 
-    /// @param l distance along the ray
+
+    /// @param vB magnetic field vector
+    /// @param vK k vector
     /// @return angle between wave vecotr and magnetic field (in radians)
-    double theta_kb (double l);
+    double theta_kb (Vector3d vB, Vector3d vK);
 
-    /// @param l distance along the ray
+    /// @param vR point vector
     /// @return Omega_vec corss r_vec 
-    Vector3d vBetaR (double l);
+    Vector3d vBetaR (Vector3d vR);
 
     /// @brief ExB drift particle velocity component (V = V_|| * b_vec + Udr)
-    /// @param l distance along the ray
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
     /// @return drift velocity Eigen 3d Vector  
-    Vector3d vUdr (double l);
+    Vector3d vUdr (Vector3d vR, Vector3d vM);
 
-    /// @param l distance along the ray
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
     /// @return drift velocity gamma factor
-    double gammaU (double l);
+    double gammaU (Vector3d vR, Vector3d vM);
 
-    /// @param l distance along the ray
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
     /// @return distance from the field line footpoint to the polar cap center
     /// @note Only for dipolar magnetic field!!!
-    double x_pc(double l);
+    double x_pc(Vector3d vR, Vector3d vM);
 
-    /// @param l distance along the ray
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
     /// @return polar cap angle cooridnate of the magnetic field line footpoint.
     /// Angle is counted from the East-West line on the polar cap
     /// @note Applicable only for magnetic fields with zero torsion
-    double phi_pc(double l);
+    double phi_pc(Vector3d vR, Vector3d vM);
 
-    /// @brief Plasma density transvers profile
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
     /// @param l distance along the ray
     /// @return normalized plasma density
-    double gFunc (double l);
+    double gFunc (Vector3d vR, Vector3d vM);
 
     /// @param l  distance along the ray
     /// @return Plasma density in physical units (g/cm^3)
-    double Ne(double l);
+    double Ne(Vector3d vR, Vector3d vM);
 
-    /// @param l distance along the ray
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
     /// @return Local cyclotron frequency (s^-1)
-    double omegaB (double l);
+    double omegaB (Vector3d vR, Vector3d vM);
 
-    /// @param l distance along the ray
-    /// @return wave frequency in plasma rest frame
-    double omegaW (double l);
-
-    /// @param l distance along the ray
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
     /// @return Local plasma frequency (s^-1)
-    double omegaP (double l);
+    double omegaP (Vector3d vR, Vector3d vM);
+
+
+    /// @param vR point vector
+    /// @param vK wave vector
+    /// @param vM magnetic moment vector
+    /// @return wave frequency in plasma rest frame
+    double omegaW (Vector3d vR, Vector3d vK, Vector3d vM);
+
+
 
     /// @brief ...
     /// @param l 

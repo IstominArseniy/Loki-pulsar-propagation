@@ -17,10 +17,11 @@ FixedHeightSolver::FixedHeightSolver(double phi_deg, int mode, ObservedRadioPuls
   phi_ = phi_deg * constants::PI / 180;
   mode_ = mode;
   l_ref = 15; // distance, after which the propagation of the O mode can be considered as rectilinear
-  Vector3d r_em = find_emission_point();
-  Vector3d k_em = beta(r_em, vMoment(0));
-  Vector3d r_start, k_start; 
-  r_start, k_start = translate_rk(r_em, k_em, vMoment(0)).first;
+  r_em = find_emission_point();
+  k_em = beta(r_em, vMoment(0));
+  r_start, k_start; 
+  r_start = translate_rk(r_em, k_em, vMoment(0)).first;
+  k_start = translate_rk(r_em, k_em, vMoment(0)).second;
 }
 
 // ----------------------- search for emission point ----------------------------------
@@ -42,14 +43,14 @@ Vector3d FixedHeightSolver::find_emission_point()
   auto func1 = [&](double theta, double phi){
     Vector3d vPoint;
     vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
-    Vector3d k_start = translate_rk(vPoint, beta(vPoint, vM), vM).second;
-    return k_start.cross(target_vector)(0);
+    Vector3d k = translate_rk(vPoint, beta(vPoint, vM), vM).second;
+    return k.cross(target_vector)(0);
   };
   auto func2 = [&](double theta, double phi){
     Vector3d vPoint;
     vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
-    Vector3d k_start = translate_rk(vPoint, beta(vPoint, vM), vM).second;
-    return k_start.cross(target_vector)(1);
+    Vector3d k = translate_rk(vPoint, beta(vPoint, vM), vM).second;
+    return k.cross(target_vector)(1);
 
   };
   for(int i = 0; i < 15; i ++) {
@@ -84,15 +85,16 @@ std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> th
     ofstream log_stream(log_path + "/log_" + std::to_string(std::round(100 * phi_*180/constants::PI)/100));
     // log_stream << find_initial_point(true) << std::endl;
     while(it != ode_range.second){ // integration
-    if(stop_condition(it->second)){ // TODO: stop integration if Udr > c(?!)
-      break;
-    }
-    // log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaBmod (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) << ", " << vUdr(it->second)(0) << ", " << vUdr(it->second)(1) << std::endl;
-    log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << BetaBmod (it->second) << ", " << -BetaBmod_derivative(it->second) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(it->second) - 1/2/Q(it->second) << std::endl;
+      if(stop_condition(it->second)){ // TODO: stop integration if Udr > c(?!)
+        break;
+      }
+      // log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaBmod (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) << ", " << vUdr(it->second)(0) << ", " << vUdr(it->second)(1) << std::endl;
+      log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << BetaBmod (it->second) << ", " << -BetaBmod_derivative(it->second) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(it->second) - 1/2/Q(it->second) << std::endl;
 
-    it++; // make integration step
+      it++; // make integration step
     }
     log_stream.close();
+
   }
   else{ //no logs
     while(it != ode_range.second){ // integration 
@@ -111,7 +113,6 @@ bool FixedHeightSolver::stop_condition(double l){
 
 void FixedHeightSolver::RHS_for_boost(const std::vector<double>& f, std::vector<double> &dydx, double l) {
 	double coeff = PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c);
-
 	double LL = Lambda (l);
 	double QQ = Q (l);
 	double BB = BetaBmod (l);
@@ -170,7 +171,7 @@ std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
 }
 //-------------------------------------------------------------------------------------
 
-// ---------------------------------- main functions "on ray"--------------------------
+// ---------------------------------- main functions for KO equations "on ray"--------------------------
 Vector3d FixedHeightSolver::vR (double l) {
   /*
   Propagation radius vector
@@ -178,43 +179,119 @@ Vector3d FixedHeightSolver::vR (double l) {
   */
   return r_start + l * k_start;
 } 
+Vector3d FixedHeightSolver::vK(double l){ 
+  return k_start;
+}
 Vector3d FixedHeightSolver::vMoment (double l) {
-  /*
-  Magnetic momentum unit vector
-  */
   Vector3d mvec;
   mvec(0) = std::sin(PSR_.chi) * std::cos(phi_ + l / PSR_.RLC);
   mvec(1) = std::sin(PSR_.chi) * std::sin(phi_ + l / PSR_.RLC);
   mvec(2) = std::cos(PSR_.chi);
   return mvec;
 }
+double FixedHeightSolver::delta (double l) {
+  Vector3d vr = vR(l);
+  Vector3d vm = vMoment(l);
+  Vector3d vk = vK(l);
+  double vx = vUdr(vr, vm) (0);
+  double vy = vUdr(vr, vm) (1);
+  double sinth = std::sin(theta_kb(vb(vr, vm), vk));
+  double costh = std::cos(theta_kb(vb(vr, vm), vk));
+  return std::atan2(-costh * vy, sinth-vx);
+}
+double FixedHeightSolver::BetaB (double l) {
+  Vector3d vr = vR(l);
+  Vector3d vm = vMoment(l);
+  Vector3d XX;
+  Vector3d YY;
+  XX = (PSR_.Omega_vec - PSR_.observer_vec.dot(PSR_.Omega_vec) * PSR_.observer_vec).normalized();
+  YY = PSR_.observer_vec.cross(XX);
+  Vector3d PAvec;
+  PAvec = PSR_.observer_vec.cross(vb(vr, vm).cross(PSR_.observer_vec));
+  double bx = XX.dot(vB(vr, vm));
+  double by = YY.dot(vB(vr, vm));
+  return std::atan2(by, bx);  // ??? was atan (by/bx)
+}
+double FixedHeightSolver::BetaBmod (double l) {
+  Vector3d XX;
+  Vector3d YY;
+  XX = (PSR_.Omega_vec - PSR_.observer_vec.dot(PSR_.Omega_vec) * PSR_.observer_vec).normalized();
+  YY = PSR_.observer_vec.cross(XX);
+  Vector3d PAvec;
+  PAvec = PSR_.observer_vec.cross(vb(vR(l), vMoment(l)).cross(PSR_.observer_vec - beta(vR(l), vMoment(l))));
+  double PAx = XX.dot(PAvec);
+  double PAy = YY.dot(PAvec);
+  return std::atan2(PAy, PAx); 
+}
+double FixedHeightSolver::Q (double l) {
+  Vector3d vr = vR(l);
+  Vector3d vm = vMoment(l);
+  Vector3d vk = vK(l);
+  double vx = vUdr(vr, vm)(0);
+  double vy = vUdr(vr, vm)(1);
+  double vz = vUdr(vr, vm)(2);
+  double costh = std::cos(theta_kb(vb(vr, vm), vk));
+  double sinth = std::sin(theta_kb(vb(vr, vm), vk));
+  return  model_.lambda * omegaB(vr, vm) * PSR_.omega_obs * (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2)) * model_.Q_type_avrg(std::pow(gammaU(vr, vm) * omegaW(vr, vk, vm) / omegaB(vr, vm), 2))
+   / (2 * std::pow(omegaW(vr, vk, vm), 2) * (costh * (1 - vx * vx - vy * vy) - vz * (1.0 - sinth * vx))); // ONLY FOR ZERO TEMPERATURE !!! 
+}
+double FixedHeightSolver::Lambda (double l) {
+  Vector3d vr = vR(l);
+  Vector3d vm = vMoment(l);
+  Vector3d vk = vK(l);
+  double vx = vUdr(vr, vm)(0);
+  double vy = vUdr(vr, vm)(1);
+  double sinth = std::sin(theta_kb(vb(vr, vm), vk));
+  double costh = std::cos(theta_kb(vb(vr, vm), vk));
+  double avrg = model_.Lambda_type_avrg(std::pow(gammaU(vr, vm) * omegaW(vr, vk, vm) / omegaB(vr, vm), 2));
+  return sgn(avrg) * (-1.0 / 2.0) * std::pow(omegaP(vr, vm) * gammaU(vr, vm) / omegaW(vr, vk, vm), 2) * avrg *
+   (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2));
+}
+double FixedHeightSolver::BetaBmod_derivative(double l)
+{
+  double dl = 1;
+  double sinBeta1 = std::sin(BetaBmod(l));
+  double sinBeta2 = std::sin(BetaBmod(l+dl));
+  double cosBeta1 = std::cos(BetaBmod(l));
+  double cosBeta2 = std::cos(BetaBmod(l+dl));
+  double sin_der = (sinBeta2 - sinBeta1) / dl;
+  double cos_der = (cosBeta2 - cosBeta1) / dl;
+  return std::sqrt(sin_der*sin_der + cos_der*cos_der);
+  // return (BetaBmod(l + dl) - BetaBmod(l)) / dl;
+}
+double FixedHeightSolver::Lambda_derivative(double l)
+{
+  double dl = 1;
+  return (Lambda(l + dl) - Lambda(l)) / dl;
+}
+
 //--------------------------------------------------------------------------------------
 
 //------------------------------ refraction --------------------------------------------
 std::pair<Vector3d, Vector3d> FixedHeightSolver::translate_rk(Vector3d r0, Vector3d k0, Vector3d m){
   // using 1D approximation
-  double theta_perp0 = ANGLE(m, k0);
-  double r_perp0 = (r0 - r0.dot(m)*m).norm();
-  std::vector<double> f_vec = {theta_perp0, r_perp0};
-  //----------------------integration---------
-  double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-8;
-  auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
-  auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const vector<double>& f, vector<double> dfdl, double l){this->refraction_RHS_for_boost(f, dfdl, l);}, f_vec, 0, l_ref, h_init); // make range for integration
-  auto it=ode_range.first;
-  while(it != ode_range.second){
-    it++;
-  }
-  //-------------------------------------------
-  double theta_perp, r_perp;
-  theta_perp = f_vec[0];
-  r_perp = f_vec[1];
-  double delta_theta_perp = theta_perp - theta_perp0;
-  // calculate new r and k
-  Vector3d e = m.cross(k0).normalized();
-  Vector3d r = r_perp/r_perp0 * r0; // TODO: Check if it is a good approximation. Seems not so good
-  Vector3d k = k0 * std::cos(delta_theta_perp) + e.cross(k) * std::sin(delta_theta_perp);
-  // return result
-  std::pair<Vector3d, Vector3d> rk_pair = {r, k};
+  // double theta_perp0 = ANGLE(m, k0);
+  // double r_perp0 = (r0 - r0.dot(m)*m).norm();
+  // std::vector<double> f_vec = {theta_perp0, r_perp0};
+  // //----------------------integration---------
+  // double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-8;
+  // auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
+  // auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const vector<double>& f, vector<double> dfdl, double l){this->refraction_RHS_for_boost(f, dfdl, l);}, f_vec, 0, l_ref, h_init); // make range for integration
+  // auto it=ode_range.first;
+  // while(it != ode_range.second){
+  //   it++;
+  // }
+  // //-------------------------------------------
+  // double theta_perp, r_perp;
+  // theta_perp = f_vec[0];
+  // r_perp = f_vec[1];
+  // double delta_theta_perp = theta_perp - theta_perp0;
+  // // calculate new r and k
+  // Vector3d e = m.cross(k0).normalized();
+  // Vector3d r = r_perp/r_perp0 * r0; // TODO: Check if it is a good approximation. Seems not so good
+  // Vector3d k = k0 * std::cos(delta_theta_perp) + e.cross(k) * std::sin(delta_theta_perp);
+  // // return result
+  std::pair<Vector3d, Vector3d> rk_pair = {r0, k0};
   return rk_pair;
 }
 
@@ -229,63 +306,29 @@ void FixedHeightSolver::refraction_RHS_for_boost(const std::vector<double>& f, s
 //-----------------------------------------------------------------------------------------
 
 //-------------------------- parameter functions -----------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-double FixedHeightSolver::find_intensity()
-{
-    return gFunc(0); // TODO: redo; incorrect in the case of refraction
+double FixedHeightSolver::psi_m (Vector3d vR, Vector3d vM) {
+  return ANGLE(vR, vM);
 }
-
-
-
-
-// ------------------------------------------------------------"on ray" functions ----------------------------------------------------------
-
-
-double FixedHeightSolver::psi_m (double l) {
-  return ANGLE(vR(l), vMoment(l));
+Vector3d FixedHeightSolver::vB (Vector3d vR, Vector3d vM) {
+  return model_.Bfield(vR, vM);
 }
-
-Vector3d FixedHeightSolver::vB (double l) {
-  return model_.Bfield(vR(l), vMoment(l));
+Vector3d FixedHeightSolver::vb (Vector3d vR, Vector3d vM) {
+  return vB(vR, vM).normalized();
 }
-
-Vector3d FixedHeightSolver::vb (double l) {
-  return vB(l).normalized();
+double FixedHeightSolver::theta_kb (Vector3d vB, Vector3d vK) {
+  return ANGLE(vB, vK);
 }
-
-double FixedHeightSolver::theta_kb (double l) {
-  return ANGLE(vB(l), PSR_.observer_vec);
+Vector3d FixedHeightSolver::vBetaR (Vector3d vR) {
+  return PSR_.Rs / constants::c * PSR_.Omega_vec.cross(vR); 
 }
-
-Vector3d FixedHeightSolver::vBetaR (double l) {
-  return PSR_.Rs / constants::c * PSR_.Omega_vec.cross(vR(l)); 
-}
-
-Vector3d FixedHeightSolver::vUdr (double l) {  
+Vector3d FixedHeightSolver::vUdr (Vector3d vR, Vector3d vM) {  
   Vector3d vn;
   Vector3d vm;
-  if(l < 1){
-    vn = (PSR_.observer_vec - PSR_.observer_vec.dot(vb(1)) * vb(1)).normalized();
-    vm = (vb(1).cross(vn)).normalized();    
-  }
-  else{
-    vn = (PSR_.observer_vec - PSR_.observer_vec.dot(vb(l)) * vb(l)).normalized();
-    vm = (vb(l).cross(vn)).normalized();
-  }
-
+  vn = (PSR_.observer_vec - PSR_.observer_vec.dot(vb(vR, vM)) * vb(vR, vM)).normalized();
+  vm = (vb(vR, vM).cross(vn)).normalized();
   Vector3d temp;
-  temp(0) = vBetaR(l).dot(vn);
-  temp(1) = vBetaR(l).dot(vm);
+  temp(0) = vBetaR(vR).dot(vn);
+  temp(1) = vBetaR(vR).dot(vm);
   if (temp(0)*temp(0) + temp(1) * temp(1) >= 1.0) {
     double coef = 1/std::sqrt(temp(0)*temp(0) + temp(1) * temp(1))*(1e-3);
     temp(0) *= coef;
@@ -298,165 +341,65 @@ Vector3d FixedHeightSolver::vUdr (double l) {
   temp(2) = std::sqrt(1 - std::pow(temp(0), 2) - std::pow(temp(1), 2));
   return temp;
 }
-
-double FixedHeightSolver::gammaU (double l) {
-  double vx = vUdr(l)(0);
-  double vy = vUdr(l)(1);
+double FixedHeightSolver::gammaU (Vector3d vR, Vector3d vM) {
+  double vx = vUdr(vR, vM)(0);
+  double vy = vUdr(vR, vM)(1);
   return std::pow(1 - vx * vx - vy * vy, -0.5);
 }
-
-double FixedHeightSolver::x_pc(double l){
-  return std::abs(std::sin(psi_m(l))) * std::sqrt(PSR_.RLC / vR(l).norm());
+double FixedHeightSolver::x_pc(Vector3d vR, Vector3d vM){
+  return std::abs(std::sin(psi_m(vR, vM))) * std::sqrt(PSR_.RLC / vR.norm());
 }
-
-double FixedHeightSolver::phi_pc(double l){
+double FixedHeightSolver::phi_pc(Vector3d vR, Vector3d vM){
   Vector3d m_perp; // Vector, perpendicular to the magnetic axis and e_phi basis vector
-  m_perp(0) = -vMoment(l)(2) *  vMoment(l)(0) / std::sqrt(std::pow(vMoment(l)(0), 2) + std::pow(vMoment(l)(1), 2));
-  m_perp(1) = -vMoment(l)(2) *  vMoment(l)[1] / std::sqrt(pow(vMoment(l)(0), 2) + std::pow(vMoment(l)(1), 2));
-  m_perp(2) = std::sqrt(std::pow(vMoment(l)[0], 2) + std::pow(vMoment(l)[1], 2));
-  Vector3d v_perp = vR(l) - vR(l).dot(vMoment(l)) * vMoment(l); // projection of vR, perpendicular to the magntic axis
+  m_perp(0) = -vM(2) *  vM(0) / std::sqrt(std::pow(vM(0), 2) + std::pow(vM(1), 2));
+  m_perp(1) = -vM(2) *  vM[1] / std::sqrt(pow(vM(0), 2) + std::pow(vM(1), 2));
+  m_perp(2) = std::sqrt(std::pow(vM[0], 2) + std::pow(vM[1], 2));
+  Vector3d v_perp = vR - vR.dot(vM) * vM; // projection of vR, perpendicular to the magntic axis
   if((m_perp.cross(v_perp)).norm() >= 0)
-    return constants::PI / 2 + ANGLE(v_perp, m_perp); //REDO ANGLE (?!)
+    return constants::PI / 2 + ANGLE(v_perp, m_perp); // REDO ANGLE (?!)
   else
     return constants::PI / 2 - ANGLE(v_perp, m_perp);
 }
-
-double FixedHeightSolver::gFunc (double l) {
-    return model_.density_profile(x_pc(l), phi_pc(l)); // TODO: make 1D/2D differentiation (performace issue)!!!
+double FixedHeightSolver::gFunc (Vector3d vR, Vector3d vM) {
+    return model_.density_profile(x_pc(vR, vM), phi_pc(vR, vM)); // TODO: make 1D/2D differentiation (performace issue)!!!
 }
 
-double FixedHeightSolver::Ne(double l) {
-  double nGJ = PSR_.Omega_vec.dot(vB(l)) * PSR_.B12 * 1e12 / std::pow(vR(l).norm(), 3) / 
+double FixedHeightSolver::Ne(Vector3d vR, Vector3d vM) {
+  double nGJ = PSR_.Omega_vec.dot(vB(vR, vM)) * PSR_.B12 * 1e12 / std::pow(vR.norm(), 3) / 
   (2 * constants::PI * constants::c * constants::e);
-  return model_.lambda * gFunc(l) * nGJ;
+  return model_.lambda * gFunc(vR, vM) * nGJ;
 }
 
-double FixedHeightSolver::omegaB (double l) {
-  return -constants::e * vB(l).norm() * (PSR_.B12*1e12 / std::pow(vR(l).norm(), 3)) / (constants::me * constants::c);
+double FixedHeightSolver::omegaB (Vector3d vR, Vector3d vM) {
+  return -constants::e * vB(vR, vM).norm() * (PSR_.B12*1e12 / std::pow(vR.norm(), 3)) / (constants::me * constants::c);
 }
-
-double FixedHeightSolver::omegaW (double l) {
-  double vx = vUdr(l)(0);
-  double vz = vUdr(l)(2);
-  double sinth = std::sin(theta_kb(l));
-  double costh = std::cos(theta_kb(l));
+double FixedHeightSolver::omegaP (Vector3d vR, Vector3d vM) {
+  return std::sqrt(4 * constants::PI * constants::e * constants::e * std::abs(Ne(vR, vM)) / constants::me);
+}
+double FixedHeightSolver::omegaW (Vector3d vR, Vector3d vK, Vector3d vM) {
+  double vx = vUdr(vR, vM)(0);
+  double vz = vUdr(vR, vM)(2);
+  double sinth = std::sin(theta_kb(vB(vR, vM), vK));
+  double costh = std::cos(theta_kb(vB(vR, vM), vK));
   return PSR_.omega_obs * (1 - sinth * vx - costh * vz);
 }
 
-double FixedHeightSolver::omegaP (double l) {
-  return std::sqrt(4 * constants::PI * constants::e * constants::e * std::abs(Ne(l)) / constants::me);
-}
-
-// --------------------------Main Kravtsov-Orlov equation functions------------------------------------
-
-double FixedHeightSolver::delta (double l) {
-  if (l < 1e-5){
-    l = 1e-5;
-  }
-  double vx = vUdr(l) (0);
-  double vy = vUdr(l) (1);
-  double sinth = std::sin(theta_kb(l));
-  double costh = std::cos(theta_kb(l));
-  return std::atan2(-costh * vy, sinth-vx);
-  // return 0.5 * std::atan(-2*vy*costh*(sinth-vx) / ((sinth-vx)*(sinth-vx) - costh*costh*vy*vy));
-  // return 0.5 * std::atan2(-2*vy*costh*(sinth-vx), ((sinth-vx)*(sinth-vx) - costh*costh*vy*vy));
-}
-
-double FixedHeightSolver::BetaB (double l) {
-  Vector3d XX;
-  Vector3d YY;
-  XX = (PSR_.Omega_vec - PSR_.observer_vec.dot(PSR_.Omega_vec) * PSR_.observer_vec).normalized();
-  YY = PSR_.observer_vec.cross(XX);
-  if (l < 1e-5){
-    l = 1e-5;
-  }
-  Vector3d PAvec;
-  PAvec = PSR_.observer_vec.cross(vb(l).cross(PSR_.observer_vec));
-  double bx = XX.dot(vB(l));
-  double by = YY.dot(vB(l));
-  return std::atan2(by, bx);  // ??? was atan (by/bx)
-}
-
-double FixedHeightSolver::BetaBmod (double l) {
-  Vector3d XX;
-  Vector3d YY;
-  XX = (PSR_.Omega_vec - PSR_.observer_vec.dot(PSR_.Omega_vec) * PSR_.observer_vec).normalized();
-  YY = PSR_.observer_vec.cross(XX);
-  if (l < 1e-1){
-    l = 1e-1;
-  }
-  // std::cout << vBetaR(1).norm()<< " " << ANGLE(vBetaR(1), vb(1)) << std::endl;
-  Vector3d PAvec;
-  // PAvec = vb(l) - PSR_.observer_vec.cross(vb(l).cross(vBetaR(l)));
-  PAvec = PSR_.observer_vec.cross(vb(l).cross(PSR_.observer_vec - beta(vR(l), vMoment(l))));
-  double PAx = XX.dot(PAvec);
-  double PAy = YY.dot(PAvec);
-  return std::atan2(PAy, PAx); 
-}
-
-double FixedHeightSolver::Q (double l) {
-  double vx = vUdr(l)(0);
-  double vy = vUdr(l)(1);
-  double vz = vUdr(l)(2);
-  double sinth = std::sin(theta_kb(l));
-  double costh = std::cos(theta_kb(l));
-  return  model_.lambda * omegaB(l) * PSR_.omega_obs * (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2)) * model_.Q_type_avrg(std::pow(gammaU(l) * omegaW(l) / omegaB(l), 2))
-   / (2 * std::pow(omegaW(l), 2) * (costh * (1 - vx * vx - vy * vy) - vz * (1.0 - sinth * vx))); // ONLY FOR ZERO TEMPERATURE !!! 
-}
+//-----------------------------------------------------------------------------------------
 
 
-double FixedHeightSolver::Lambda (double l) {
-  double vx = vUdr(l)(0);
-  double vy = vUdr(l)(1);
-  double sinth = std::sin(theta_kb(l));
-  double costh = std::cos(theta_kb(l));
-  double avrg = model_.Lambda_type_avrg(std::pow(gammaU(l) * omegaW(l) / omegaB(l), 2));
-  return sgn(avrg) * (-1.0 / 2.0) * std::pow(omegaP(l) * gammaU(l) / omegaW(l), 2) * avrg *
-   (std::pow(sinth - vx, 2) + std::pow(vy * costh, 2));
-}
-
-double FixedHeightSolver::BetaB_derivative(double l)
+double FixedHeightSolver::find_intensity()
 {
-  double dl = 1;
-  return (BetaB(l + dl) - BetaB(l)) / dl;
+    return gFunc(r_em, vMoment(0)); // TODO: redo; incorrect in the case of refraction
 }
 
-double FixedHeightSolver::Q_derivative(double l)
-{
-  double dl = 1;
-  return (Q(l + dl) - Q(l)) / dl;
-}
 
-double FixedHeightSolver::Lambda_derivative(double l)
-{
-  double dl = 1;
-  return (Lambda(l + dl) - Lambda(l)) / dl;
-}
 
-double FixedHeightSolver::delta_derivative(double l)
-{
-  double dl = 1;
-  return (delta(l + dl) - delta(l)) / dl;
-}
-
-double FixedHeightSolver::BetaBmod_derivative(double l)
-{
-  double dl = 1;
-  double sinBeta1 = std::sin(BetaBmod(l));
-  double sinBeta2 = std::sin(BetaBmod(l+dl));
-  double cosBeta1 = std::cos(BetaBmod(l));
-  double cosBeta2 = std::cos(BetaBmod(l+dl));
-  double sin_der = (sinBeta2 - sinBeta1) / dl;
-  double cos_der = (cosBeta2 - cosBeta1) / dl;
-  return std::sqrt(sin_der*sin_der + cos_der*cos_der);
-  // return (BetaBmod(l + dl) - BetaBmod(l)) / dl;
-}
 
 // -----------------------Cyclotron Absorption------------------------
 
 double FixedHeightSolver::dtau (double l) {
   double coef = constants::PI * PSR_.Rs / (constants::c * PSR_.omega_obs);
-  return coef * std::pow(omegaP(l), 2) * model_.fDist(std::abs(omegaB(l)) / (omegaW(l) * gammaU(l)));
+  return coef * std::pow(omegaP(vR(l), vMoment(l)), 2) * model_.fDist(std::abs(omegaB(vR(l), vMoment(l))) / (omegaW(vR(l), vK(l), vMoment(l)) * gammaU(vR(l), vMoment(l))));
 }
 
 double FixedHeightSolver::get_tau(){
@@ -478,16 +421,16 @@ void FixedHeightSolver::write_params_on_ray(std::string log_path)
         param_stream << Lambda(l) << ",";
         param_stream << delta(l) << ","; 
         param_stream << BetaB(l) << ",";
-        param_stream << vUdr(l)(0) << ",";
-        param_stream << vUdr(l)(1) << ",";
-        param_stream << theta_kb(l) << ",";
-        param_stream << x_pc(l) << ",";
+        param_stream << vUdr(vR(l), vMoment(l))(0) << ",";
+        param_stream << vUdr(vR(l), vMoment(l))(1) << ",";
+        param_stream << theta_kb(vb(vR(l), vMoment(l)), vK(l)) << ",";
+        param_stream << x_pc(vR(l), vMoment(l)) << ",";
         param_stream << Q(l) << ",";
         param_stream << BetaBmod(l) << ", " ;
         param_stream << -BetaBmod_derivative(l) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(l) - 1/2/Q(l)<<",";
         param_stream << -BetaBmod_derivative(l) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(l)<<",";
         param_stream << std::abs(Lambda_derivative(l) / std::pow(Lambda(l), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs)<<",";
-        param_stream << std::pow((PSR_.observer_vec.cross(vb(l).cross(PSR_.observer_vec - beta(vR(l), vMoment(l))))).norm(), 2);
+        param_stream << std::pow((PSR_.observer_vec.cross(vb(vR(l), vMoment(l)).cross(PSR_.observer_vec - beta(vR(l), vMoment(l))))).norm(), 2);
         param_stream << std::endl;
         l += dl;
     }

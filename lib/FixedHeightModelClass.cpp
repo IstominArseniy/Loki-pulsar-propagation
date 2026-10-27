@@ -22,7 +22,7 @@ double FixedHeightModel::density_profile(double x_pc, double phi_pc)
 
 }
 
-Vector3d FixedHeightModel::Bfield(Vector3d vR, Vector3d m){
+Vector3d FixedHeightModel::Bfield(Vector3d vR, Vector3d m){ // TODO: Bfield in G.
     double Rdist = vR.norm();
     Vector3d n = vR.normalized();
     Vector3d Bdipole = 3 * m.dot(n) * n - m; // Dipole component
