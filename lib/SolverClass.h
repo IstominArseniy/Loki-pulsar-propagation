@@ -38,11 +38,6 @@ class FixedHeightSolver{
 
     void refraction_RHS_for_boost(const std::vector<double>& f, std::vector<double>& dfdl, double l);
 
-    /// @brief find approximate solution for Kravtsov-Orlov equations in dense plasma regions 
-    /// @param theta_inital inital values for comlex polarisation angle (as length 2 vector)
-    /// @param mode emission mode (1 - Omode, 0 - Xmode)
-    /// @return theta_final -  final complex polarisation angle (as length 2 vector)
-    std::vector<double> find_approximate_KO_solution(std::vector<double> theta_initial);
 
     /// @brief find approximate solution for Kravtsov-Orlov equations in dense plasma regions 
     /// @param l - distance from the star. Theta_inintal is determined by emission mode
@@ -188,8 +183,6 @@ class FixedHeightSolver{
     /// @return ...
     bool stop_condition(double l);
 
-
-    double Q_denominator(double l);
 
 
 

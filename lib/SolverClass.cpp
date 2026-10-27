@@ -23,6 +23,56 @@ FixedHeightSolver::FixedHeightSolver(double phi_deg, int mode, ObservedRadioPuls
   r_start, k_start = translate_rk(r_em, k_em, vMoment(0)).first;
 }
 
+// ----------------------- search for emission point ----------------------------------
+Vector3d FixedHeightSolver::beta(Vector3d r, Vector3d m){
+  Vector3d beta_vec;
+  Vector3d Omega_corss_R = PSR_.Rs / constants::c * PSR_.Omega_vec.cross(r);
+  Vector3d b_normalized = model_.Bfield(r, m).normalized();
+  double kappa = -Omega_corss_R.dot(b_normalized) + std::sqrt(std::pow(Omega_corss_R.dot(b_normalized), 2) - Omega_corss_R.dot(Omega_corss_R) + 1.0 - 1.0/model_.gamma0/model_.gamma0);
+  return kappa*b_normalized + Omega_corss_R;
+}
+
+Vector3d FixedHeightSolver::find_emission_point()
+{ 
+  double theta_em = PSR_.chi;
+  double phi_em = phi_;
+  Vector3d vM = vMoment(0);
+  // Vector3d rand_vector = (Vector3d::Random().cross(PSR_.observer_vec)).normalized(); // regularisation of theta_kb
+  Vector3d target_vector = PSR_.observer_vec;
+  auto func1 = [&](double theta, double phi){
+    Vector3d vPoint;
+    vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
+    Vector3d k_start = translate_rk(vPoint, beta(vPoint, vM), vM).second;
+    return k_start.cross(target_vector)(0);
+  };
+  auto func2 = [&](double theta, double phi){
+    Vector3d vPoint;
+    vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
+    Vector3d k_start = translate_rk(vPoint, beta(vPoint, vM), vM).second;
+    return k_start.cross(target_vector)(1);
+
+  };
+  for(int i = 0; i < 15; i ++) {
+      double f1x = DX(func1, theta_em, phi_em);
+      double f2x = DX(func2, theta_em, phi_em);
+      double f1y = DY(func1, theta_em, phi_em);
+      double f2y = DY(func2, theta_em, phi_em);
+      double f1 = func1(theta_em, phi_em);
+      double f2 = func2(theta_em, phi_em);
+      double dX = (f1y * f2 - f1 * f2y) / (f1x * f2y - f1y * f2x);
+      double dY = (f1x * f2 - f1 * f2x) / (f1y * f2x - f2y * f1x);
+      theta_em += dX;
+      phi_em += dY;
+  }
+  Vector3d em_point = {model_.Rem * std::sin(theta_em) * std::cos(phi_em), 
+    model_.Rem * std::sin(theta_em) * std::sin(phi_em), 
+    model_.Rem * std::cos(theta_em)};
+  return em_point;
+}
+//----------------------------------------------------------------------------------------
+
+
+// ----------------------- main KO integration -------------------------------------------
 std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> theta_initial, double l1, double l2, std::string log_path)
 {
   std::vector<double> dep_vars = theta_initial;
@@ -34,7 +84,7 @@ std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> th
     ofstream log_stream(log_path + "/log_" + std::to_string(std::round(100 * phi_*180/constants::PI)/100));
     // log_stream << find_initial_point(true) << std::endl;
     while(it != ode_range.second){ // integration
-    if(stop_condition(it->second)){ // stop integration if Udr > c(?!)
+    if(stop_condition(it->second)){ // TODO: stop integration if Udr > c(?!)
       break;
     }
     // log_stream << it->second <<  ", " << it->first[0] << ", " << it->first[1] << ", " << PSR_.Rs * PSR_.omega_obs / (2.0 * constants::c) * Lambda(it->second) << ", " << BetaBmod (it->second) << ", " <<BetaB (it->second) << ", " << delta (it->second) << ", " << vUdr(it->second)(0) << ", " << vUdr(it->second)(1) << std::endl;
@@ -55,19 +105,8 @@ std::vector<double> FixedHeightSolver::solve_KO_equations(std::vector<double> th
  return dep_vars;
 }
 
-
 bool FixedHeightSolver::stop_condition(double l){
   return false;
-}
-
-double FixedHeightSolver::Q_denominator(double l)
-{
-  double vx = vUdr(l)(0);
-  double vy = vUdr(l)(1);
-  double vz = vUdr(l)(2);
-  double sinth = std::sin(theta_kb(l));
-  double costh = std::cos(theta_kb(l));
-  return (costh * (1 - vx * vx - vy * vy) - vz * (1.0 - sinth * vx));
 }
 
 void FixedHeightSolver::RHS_for_boost(const std::vector<double>& f, std::vector<double> &dydx, double l) {
@@ -79,36 +118,6 @@ void FixedHeightSolver::RHS_for_boost(const std::vector<double>& f, std::vector<
 	dydx[0] = coeff * (-LL / QQ - LL * std::cos(2 * f[0] - 2 * BB) * std::sinh(2 * f[1]));
 	dydx[1] = coeff * LL * std::sin(2 * f[0] - 2 * BB) * std::cosh(2 * f[1]);
 }
-
-void FixedHeightSolver::refraction_RHS_for_boost(const std::vector<double>& f, std::vector<double>& dfdl, double l){
-  dfdl[0]=1;
-  dfdl[1]=1;
-}
-
-std::vector<double> FixedHeightSolver::find_approximate_KO_solution(std::vector<double> theta_initial)
-{
-  // SEEMS TO BE IMPOSSIBLE
-  return std::vector<double>();
-}
-
-std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
-{
-  std::vector<double> theta_final(2);
-  double Lambda_integral;
-  double starting_point=0;
-  Lambda_integral = integrate([this](double l){return this->Lambda(l);}, starting_point, l);
-  double coefficient = constants::c / PSR_.Rs / PSR_.omega_obs;
-  if (mode_ == 0){
-    theta_final[0] = constants::PI / 2 + BetaBmod(l);
-    theta_final[1] = (-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
-  }
-  else{
-    theta_final[0] = BetaBmod(l);
-    theta_final[1] = -(-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
-  }
-  return theta_final;
-}
-
 
 double FixedHeightSolver::find_initial_point(bool use_binary_search) {
   double freq0 = 0.1;
@@ -142,126 +151,26 @@ double FixedHeightSolver::find_initial_point(bool use_binary_search) {
   }
 }
 
-double FixedHeightSolver::find_intensity()
+std::vector<double> FixedHeightSolver::find_approximate_KO_solution(double l)
 {
-    return gFunc(0); // TODO: redo; incorrect in the case of refraction
-}
-
-void FixedHeightSolver::write_params_on_ray(std::string log_path)
-{
-    if (log_path == "")
-      return;
-    std::ofstream param_stream(log_path + "/prop_params_" + std::to_string(std::round(100 * phi_*180/constants::PI)/100) + ".csv");
-    double l = 0;
-    double dl = 2;
-    param_stream << "l," << "Lambda," << "delta," << "beta," << "vUdr_x," << "vUdr_y," << "theta_kb," << "x_pc," << "Q," << "beta_eff," << "R/Lambda/2," 
-    << "beta_der/Lambda," << "geom_condition," << "p2" << std::endl; 
-    while (l <= 1.5 * PSR_.RLC){
-        param_stream << l << ",";
-        param_stream << Lambda(l) << ",";
-        param_stream << delta(l) << ","; 
-        param_stream << BetaB(l) << ",";
-        param_stream << vUdr(l)(0) << ",";
-        param_stream << vUdr(l)(1) << ",";
-        param_stream << theta_kb(l) << ",";
-        param_stream << x_pc(l) << ",";
-        param_stream << Q(l) << ",";
-        param_stream << BetaBmod(l) << ", " ;
-        param_stream << -BetaBmod_derivative(l) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(l) - 1/2/Q(l)<<",";
-        param_stream << -BetaBmod_derivative(l) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(l)<<",";
-        param_stream << std::abs(Lambda_derivative(l) / std::pow(Lambda(l), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs)<<",";
-        param_stream << std::pow((PSR_.observer_vec.cross(vb(l).cross(PSR_.observer_vec - beta(vR(l), vMoment(l))))).norm(), 2);
-        param_stream << std::endl;
-        l += dl;
-    }
-}
-
-
-// ------------------------------------------------------------"on ray" functions ----------------------------------------------------------
-Vector3d FixedHeightSolver::vMoment (double l) {
-  /*
-  Magnetic momentum unit vector
-  */
-  Vector3d mvec;
-  mvec(0) = std::sin(PSR_.chi) * std::cos(phi_ + (l+l_ref) / PSR_.RLC);
-  mvec(1) = std::sin(PSR_.chi) * std::sin(phi_ + (l+l_ref) / PSR_.RLC);
-  mvec(2) = std::cos(PSR_.chi);
-  return mvec;
-}
-Vector3d FixedHeightSolver::beta(Vector3d r, Vector3d m){
-  Vector3d beta_vec;
-  Vector3d Omega_corss_R = PSR_.Rs / constants::c * PSR_.Omega_vec.cross(r);
-  Vector3d b_normalized = model_.Bfield(r, m).normalized();
-  double kappa = -Omega_corss_R.dot(b_normalized) + std::sqrt(std::pow(Omega_corss_R.dot(b_normalized), 2) - Omega_corss_R.dot(Omega_corss_R) + 1.0 - 1.0/model_.gamma0/model_.gamma0);
-  return kappa*b_normalized + Omega_corss_R;
-}
-
-
-std::pair<Vector3d, Vector3d> FixedHeightSolver::translate_rk(Vector3d r0, Vector3d k0, Vector3d m){
-  // using 1D approximation
-  double theta_perp0 = ANGLE(m, k0);
-  double r_perp0 = (r0 - r0.dot(m)*m).norm();
-  std::vector<double> f_vec = {theta_perp0, r_perp0};
-  //--------------------------------------integration------------------------------------
-  double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-8;
-  auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
-  auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const vector<double>& f, vector<double> dfdl, double l){this->refraction_RHS_for_boost(f, dfdl, l);}, f_vec, 0, l_ref, h_init); // make range for integration
-  auto it=ode_range.first;
-  while(it != ode_range.second){
-    it++;
+  std::vector<double> theta_final(2);
+  double Lambda_integral;
+  double starting_point=0;
+  Lambda_integral = integrate([this](double l){return this->Lambda(l);}, starting_point, l);
+  double coefficient = constants::c / PSR_.Rs / PSR_.omega_obs;
+  if (mode_ == 0){
+    theta_final[0] = constants::PI / 2 + BetaBmod(l);
+    theta_final[1] = (-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
   }
-  //-------------------------------------------------------------------------------------
-  double theta_perp, rho_perp;
-  theta_perp = f_vec[0];
-  rho_perp = f_vec[1];
-  double delta_theta_perp = theta_perp - theta_perp0;
-  // calculate new r and k
-  Vector3d e = m.cross(k0).normalized();
-  Vector3d r;
-  Vector3d k = k0 * std::cos(delta_theta_perp) + e.cross(k) * std::sin(delta_theta_perp);
-  // return result
-  std::pair<Vector3d, Vector3d> rk_pair = {r, k};
-  return rk_pair;
-}
-
-Vector3d FixedHeightSolver::find_emission_point()
-{ 
-  double theta_em = PSR_.chi;
-  double phi_em = phi_;
-  Vector3d vM = vMoment(0);
-  // Vector3d rand_vector = (Vector3d::Random().cross(PSR_.observer_vec)).normalized(); // regularisation of theta_kb
-  Vector3d target_vector = PSR_.observer_vec;
-  auto func1 = [&](double theta, double phi){
-    Vector3d vPoint;
-    vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
-    // return (model_.Bfield(vPoint, vM)).cross(target_vector)(0);
-    return (beta(vPoint, vM)).cross(target_vector)(0);
-  };
-  auto func2 = [&](double theta, double phi){
-    Vector3d vPoint;
-    vPoint << model_.Rem * std::sin(theta) * std::cos(phi), model_.Rem * std::sin(theta) * std::sin(phi), model_.Rem * std::cos(theta);
-    // return (model_.Bfield(vPoint, vM)).cross(target_vector)(1);
-    return (beta(vPoint, vM)).cross(target_vector)(1);
-
-  };
-  for(int i = 0; i < 15; i ++) {
-      double f1x = DX(func1, theta_em, phi_em);
-      double f2x = DX(func2, theta_em, phi_em);
-      double f1y = DY(func1, theta_em, phi_em);
-      double f2y = DY(func2, theta_em, phi_em);
-      double f1 = func1(theta_em, phi_em);
-      double f2 = func2(theta_em, phi_em);
-      double dX = (f1y * f2 - f1 * f2y) / (f1x * f2y - f1y * f2x);
-      double dY = (f1x * f2 - f1 * f2x) / (f1y * f2x - f2y * f1x);
-      theta_em += dX;
-      phi_em += dY;
+  else{
+    theta_final[0] = BetaBmod(l);
+    theta_final[1] = -(-coefficient / Lambda(l) * BetaBmod_derivative(l) - 1 / 2 / Q(l));
   }
-  Vector3d em_point = {model_.Rem * std::sin(theta_em) * std::cos(phi_em), 
-    model_.Rem * std::sin(theta_em) * std::sin(phi_em), 
-    model_.Rem * std::cos(theta_em)};
-  return em_point;
+  return theta_final;
 }
+//-------------------------------------------------------------------------------------
 
+// ---------------------------------- main functions "on ray"--------------------------
 Vector3d FixedHeightSolver::vR (double l) {
   /*
   Propagation radius vector
@@ -269,6 +178,78 @@ Vector3d FixedHeightSolver::vR (double l) {
   */
   return r_start + l * k_start;
 } 
+Vector3d FixedHeightSolver::vMoment (double l) {
+  /*
+  Magnetic momentum unit vector
+  */
+  Vector3d mvec;
+  mvec(0) = std::sin(PSR_.chi) * std::cos(phi_ + l / PSR_.RLC);
+  mvec(1) = std::sin(PSR_.chi) * std::sin(phi_ + l / PSR_.RLC);
+  mvec(2) = std::cos(PSR_.chi);
+  return mvec;
+}
+//--------------------------------------------------------------------------------------
+
+//------------------------------ refraction --------------------------------------------
+std::pair<Vector3d, Vector3d> FixedHeightSolver::translate_rk(Vector3d r0, Vector3d k0, Vector3d m){
+  // using 1D approximation
+  double theta_perp0 = ANGLE(m, k0);
+  double r_perp0 = (r0 - r0.dot(m)*m).norm();
+  std::vector<double> f_vec = {theta_perp0, r_perp0};
+  //----------------------integration---------
+  double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-8;
+  auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
+  auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const vector<double>& f, vector<double> dfdl, double l){this->refraction_RHS_for_boost(f, dfdl, l);}, f_vec, 0, l_ref, h_init); // make range for integration
+  auto it=ode_range.first;
+  while(it != ode_range.second){
+    it++;
+  }
+  //-------------------------------------------
+  double theta_perp, r_perp;
+  theta_perp = f_vec[0];
+  r_perp = f_vec[1];
+  double delta_theta_perp = theta_perp - theta_perp0;
+  // calculate new r and k
+  Vector3d e = m.cross(k0).normalized();
+  Vector3d r = r_perp/r_perp0 * r0; // TODO: Check if it is a good approximation. Seems not so good
+  Vector3d k = k0 * std::cos(delta_theta_perp) + e.cross(k) * std::sin(delta_theta_perp);
+  // return result
+  std::pair<Vector3d, Vector3d> rk_pair = {r, k};
+  return rk_pair;
+}
+
+void FixedHeightSolver::refraction_RHS_for_boost(const std::vector<double>& f, std::vector<double>& dfdl, double l){
+  dfdl[0]=1;
+  dfdl[1]=1;
+}
+// double FixedHeightSolver::theta_star(double x, double l_from_star){
+//   return 0;
+// }
+
+//-----------------------------------------------------------------------------------------
+
+//-------------------------- parameter functions -----------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+double FixedHeightSolver::find_intensity()
+{
+    return gFunc(0); // TODO: redo; incorrect in the case of refraction
+}
+
+
+
+
+// ------------------------------------------------------------"on ray" functions ----------------------------------------------------------
+
 
 double FixedHeightSolver::psi_m (double l) {
   return ANGLE(vR(l), vMoment(l));
@@ -341,7 +322,7 @@ double FixedHeightSolver::phi_pc(double l){
 }
 
 double FixedHeightSolver::gFunc (double l) {
-    return model_.density_profile(x_pc(l), phi_pc(l)); // TODO make 1D/2D differentiation (performace issue)!!!
+    return model_.density_profile(x_pc(l), phi_pc(l)); // TODO: make 1D/2D differentiation (performace issue)!!!
 }
 
 double FixedHeightSolver::Ne(double l) {
@@ -481,3 +462,34 @@ double FixedHeightSolver::dtau (double l) {
 double FixedHeightSolver::get_tau(){
   return integrate([this](double l){return this->dtau(l);}, 1, PSR_.RLC);
 }
+
+// --------------------------- logging ---------------------------------
+void FixedHeightSolver::write_params_on_ray(std::string log_path)
+{
+    if (log_path == "")
+      return;
+    std::ofstream param_stream(log_path + "/prop_params_" + std::to_string(std::round(100 * phi_*180/constants::PI)/100) + ".csv");
+    double l = 0;
+    double dl = 2;
+    param_stream << "l," << "Lambda," << "delta," << "beta," << "vUdr_x," << "vUdr_y," << "theta_kb," << "x_pc," << "Q," << "beta_eff," << "R/Lambda/2," 
+    << "beta_der/Lambda," << "geom_condition," << "p2" << std::endl; 
+    while (l <= 1.5 * PSR_.RLC){
+        param_stream << l << ",";
+        param_stream << Lambda(l) << ",";
+        param_stream << delta(l) << ","; 
+        param_stream << BetaB(l) << ",";
+        param_stream << vUdr(l)(0) << ",";
+        param_stream << vUdr(l)(1) << ",";
+        param_stream << theta_kb(l) << ",";
+        param_stream << x_pc(l) << ",";
+        param_stream << Q(l) << ",";
+        param_stream << BetaBmod(l) << ", " ;
+        param_stream << -BetaBmod_derivative(l) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(l) - 1/2/Q(l)<<",";
+        param_stream << -BetaBmod_derivative(l) * constants::c / PSR_.Rs / PSR_.omega_obs / Lambda(l)<<",";
+        param_stream << std::abs(Lambda_derivative(l) / std::pow(Lambda(l), 2) * 2 * constants::c / PSR_.Rs / PSR_.omega_obs)<<",";
+        param_stream << std::pow((PSR_.observer_vec.cross(vb(l).cross(PSR_.observer_vec - beta(vR(l), vMoment(l))))).norm(), 2);
+        param_stream << std::endl;
+        l += dl;
+    }
+}
+// ------------------------------------------------------------------------
