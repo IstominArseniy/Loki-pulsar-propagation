@@ -36,8 +36,28 @@ class FixedHeightSolver{
     /// @param l independent variable by reference
     void RHS_for_boost(const std::vector<double>& f, std::vector<double> &dydx, double l);
 
-    void refraction_RHS_for_boost(const std::vector<double>& f, std::vector<double>& dfdl, double l);
+    void refraction_RHS(const std::vector<double>& f, std::vector<double>& dfdl, double l, Vector3d vM);
 
+    double k_div_n(Vector3d vR, Vector3d vK, Vector3d vM);
+
+    Vector3d dr_derivative(Vector3d vR, Vector3d vK, Vector3d vM);
+
+    Vector3d dk_derivative(Vector3d vR, Vector3d vK, Vector3d vM);
+
+    void refraction1D_RHS(const std::vector<double> &f, std::vector<double> &dfdl, double l);
+
+
+
+    /// @param vR point vector
+    /// @param vM magnetic moment vector
+    /// @brief theta_star^4 parameter for O-mode refraction index
+    double theta_star4(Vector3d vR, Vector3d vM);
+
+    /// @param vR point vector
+    /// @param vK wave vector
+    /// @param vM magnetic moment vector
+    /// @brief O mode refrative index
+    double nO(Vector3d vR, Vector3d vK, Vector3d vM);
 
     /// @brief find approximate solution for Kravtsov-Orlov equations in dense plasma regions 
     /// @param l - distance from the star. Theta_inintal is determined by emission mode
@@ -105,8 +125,9 @@ class FixedHeightSolver{
     /// @param k0 initial wave k
     /// @param m magnetic moment unit vector
     /// @return pair of final (r, k) vector
-    std::pair<Vector3d, Vector3d>  translate_rk(Vector3d r0, Vector3d k0, Vector3d m);
+    std::pair<Vector3d, Vector3d>  translate_rk(Vector3d r0, Vector3d k0, Vector3d vM);
 
+    std::pair<Vector3d, Vector3d> translate_rk_1D(Vector3d r0, Vector3d k0, Vector3d m);
 
 
     /// @brief finds spherical angular coordinates of the emission point (on the distance Rem) using ...

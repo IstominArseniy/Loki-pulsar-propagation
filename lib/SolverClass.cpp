@@ -1,4 +1,5 @@
 #include <boost/numeric/odeint.hpp>
+#include <boost/numeric/odeint/external/eigen/eigen_algebra.hpp>
 
 #include "SolverClass.h"
 #include "functions.h"
@@ -268,40 +269,112 @@ double FixedHeightSolver::Lambda_derivative(double l)
 //--------------------------------------------------------------------------------------
 
 //------------------------------ refraction --------------------------------------------
-std::pair<Vector3d, Vector3d> FixedHeightSolver::translate_rk(Vector3d r0, Vector3d k0, Vector3d m){
-  // using 1D approximation
-  // double theta_perp0 = ANGLE(m, k0);
-  // double r_perp0 = (r0 - r0.dot(m)*m).norm();
-  // std::vector<double> f_vec = {theta_perp0, r_perp0};
-  // //----------------------integration---------
-  // double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-8;
-  // auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
-  // auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const vector<double>& f, vector<double> dfdl, double l){this->refraction_RHS_for_boost(f, dfdl, l);}, f_vec, 0, l_ref, h_init); // make range for integration
-  // auto it=ode_range.first;
-  // while(it != ode_range.second){
-  //   it++;
-  // }
-  // //-------------------------------------------
-  // double theta_perp, r_perp;
-  // theta_perp = f_vec[0];
-  // r_perp = f_vec[1];
-  // double delta_theta_perp = theta_perp - theta_perp0;
-  // // calculate new r and k
-  // Vector3d e = m.cross(k0).normalized();
-  // Vector3d r = r_perp/r_perp0 * r0; // TODO: Check if it is a good approximation. Seems not so good
-  // Vector3d k = k0 * std::cos(delta_theta_perp) + e.cross(k) * std::sin(delta_theta_perp);
-  // // return result
-  std::pair<Vector3d, Vector3d> rk_pair = {r0, k0};
-  return rk_pair;
-}
+// std::pair<Vector3d, Vector3d> FixedHeightSolver::translate_rk_1D(Vector3d r0, Vector3d k0, Vector3d m){
+//   // using 1D approximation
+//   double theta_perp0 = ANGLE(m, k0);
+//   double r_perp0 = (r0 - r0.dot(m)*m).norm();
+//   std::vector<double> f_vec = {theta_perp0, r_perp0};
+//   //----------------------integration---------
+//   double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-8;
+//   auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
+//   auto ode_range = make_adaptive_time_range(addaptive_stepper, [this](const vector<double>& f, vector<double> dfdl, double l){this->refraction_RHS(f, dfdl, l);}, f_vec, 0, l_ref, h_init); // make range for integration
+//   auto it=ode_range.first;
+//   while(it != ode_range.second){
+//     it++;
+//   }
+//   //-------------------------------------------
+//   double theta_perp, r_perp;
+//   theta_perp = f_vec[0];
+//   r_perp = f_vec[1];
+//   double delta_theta_perp = theta_perp - theta_perp0;
+//   // calculate new r and k
+//   Vector3d e = m.cross(k0).normalized();
+//   Vector3d r = r_perp/r_perp0 * r0; // TODO: Check if it is a good approximation. Seems not so good
+//   Vector3d k = k0 * std::cos(delta_theta_perp) + e.cross(k) * std::sin(delta_theta_perp);
+//   // return result
+//   std::pair<Vector3d, Vector3d> rk_pair = {r0, k0};
+//   return rk_pair;
+// }
 
-void FixedHeightSolver::refraction_RHS_for_boost(const std::vector<double>& f, std::vector<double>& dfdl, double l){
+void FixedHeightSolver::refraction1D_RHS(const std::vector<double>& f, std::vector<double>& dfdl, double l){
   dfdl[0]=1;
   dfdl[1]=1;
 }
-// double FixedHeightSolver::theta_star(double x, double l_from_star){
-//   return 0;
-// }
+
+std::pair<Vector3d, Vector3d> FixedHeightSolver::translate_rk(Vector3d r0, Vector3d k0, Vector3d vM){
+  std::vector<double> f_vec = {r0(0), r0(1), r0(2), k0(0), k0(1), k0(2)};
+  //----------------------integration------------------
+  double eps_abs = 1e-6, eps_rel = 1e-6, h_init = 1.0e-8;
+  auto addaptive_stepper = make_controlled(eps_abs, eps_rel, runge_kutta_dopri5 < std::vector<double> >()); // make stepper for ODE integration
+  auto ode_range = make_adaptive_time_range(addaptive_stepper, [this, vM](const vector<double>& f, vector<double> dfdl, double l){this->refraction_RHS(f, dfdl, l, vM);}, f_vec, 0, l_ref, h_init); // make range for integration
+  auto it=ode_range.first;
+  while(it != ode_range.second){
+    it++;
+  }
+  //---------------------------------------------------
+  Vector3d r, k;
+  r << f_vec[0], f_vec[1], f_vec[2];
+  k << f_vec[3], f_vec[4], f_vec[5];
+  std::pair<Vector3d, Vector3d> rk_pair = {r, k};
+  return rk_pair;
+  
+}
+
+void FixedHeightSolver::refraction_RHS(const std::vector<double>& f, std::vector<double>& dfdl, double l, Vector3d vM){
+  Vector3d vR, vK;
+  vR << f[0], f[1], f[2];
+  vK << f[3], f[4], f[5];
+  Vector3d d_dr = dr_derivative(vR, vK, vM);
+  Vector3d d_dk = dk_derivative(vR, vK, vM); 
+  //r vector part
+  dfdl[0] = d_dk(0);
+  dfdl[1] = d_dk(1);
+  dfdl[2] = d_dk(2);
+  //k vector part
+  dfdl[3] = -d_dr(0);
+  dfdl[4] = -d_dr(1);
+  dfdl[5] = -d_dr(2);
+}
+
+double FixedHeightSolver::k_div_n(Vector3d vR, Vector3d vK, Vector3d vM){
+  return vK.norm() / nO(vR, vK, vM);
+}
+
+Vector3d FixedHeightSolver::dr_derivative(Vector3d vR, Vector3d vK, Vector3d vM){
+  Vector3d dr_der, step_rx, step_ry, step_rz;
+  double dl = 1e-5;
+  step_rx << dl, 0, 0;
+  step_ry << 0, dl, 0;
+  step_rz << 0, 0, dl;
+  dr_der(0) = (k_div_n(vR + step_rx, vK, vM) - k_div_n(vR - step_rx, vK, vM))/2/dl;
+  dr_der(1) = (k_div_n(vR + step_ry, vK, vM) - k_div_n(vR - step_ry, vK, vM))/2/dl;
+  dr_der(2) = (k_div_n(vR + step_rz, vK, vM) - k_div_n(vR - step_rz, vK, vM))/2/dl;
+  return dr_der;
+}
+
+Vector3d FixedHeightSolver::dk_derivative(Vector3d vR, Vector3d vK, Vector3d vM){
+  Vector3d dk_der, step_kx, step_ky, step_kz;
+  double dl = 1e-5;
+  step_kx << dl, 0, 0;
+  step_ky << 0, dl, 0;
+  step_kz << 0, 0, dl;
+  dk_der(0) = (k_div_n(vR, vK + step_kx, vM) - k_div_n(vR, vK + step_kx, vM))/2/dl;
+  dk_der(1) = (k_div_n(vR, vK + step_ky, vM) - k_div_n(vR, vK + step_ky, vM))/2/dl;
+  dk_der(2) = (k_div_n(vR, vK + step_kz, vM) - k_div_n(vR, vK + step_kz, vM))/2/dl;
+  return dk_der;
+}
+
+
+double FixedHeightSolver::theta_star4(Vector3d vR, Vector3d vM){
+  return omegaP(vR, vM)*omegaP(vR, vM) / PSR_.omega_obs / PSR_.omega_obs / std::pow(model_.gamma0, 3);
+}
+
+double FixedHeightSolver::nO(Vector3d vR, Vector3d vK, Vector3d vM){
+  double kb_angel = theta_kb(vR, vK);
+  return 1 + std::pow(kb_angel, 2) / 4 - std::sqrt(theta_star4(vR, vM) + std::pow(kb_angel, 4)/16);
+}
+
+
 
 //-----------------------------------------------------------------------------------------
 
@@ -389,7 +462,7 @@ double FixedHeightSolver::omegaW (Vector3d vR, Vector3d vK, Vector3d vM) {
 
 double FixedHeightSolver::find_intensity()
 {
-    return gFunc(r_em, vMoment(0)); // TODO: redo; incorrect in the case of refraction
+    return gFunc(r_em, vMoment(0)); 
 }
 
 
